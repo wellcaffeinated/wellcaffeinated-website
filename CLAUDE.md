@@ -70,6 +70,16 @@ script — `assets.directory` points at `dist/`). `pnpm run deploy` builds and
 publishes; Cloudflare's Workers Builds can also deploy on push once the repo is
 connected.
 
+## Agent tooling
+
+Cloudflare's official skills are vendored in `.claude/skills/` (`cloudflare`,
+`wrangler`, `workers-best-practices`) — see the README there for provenance and
+how to update them. `.mcp.json` wires up the Cloudflare and Astro docs MCP
+servers; prefer retrieving from those over recalling API details.
+
+Astro publishes no skill for building sites (the ones in `withastro/astro` are
+for contributing to Astro itself), so the docs MCP server is its whole surface.
+
 ## Status
 
 Phase 0 foundation. The blog posts in `src/blog/` are **throwaway

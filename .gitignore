@@ -23,7 +23,8 @@ logs/
 .idea
 
 # Environment artifacts (sandbox/container bind-mounts)
-.claude/
+.claude/*
+!.claude/skills/
 HEAD
 objects
 refs
@@ -37,7 +38,6 @@ config
 .zprofile
 .profile
 .ripgreprc
-.mcp.json
 
 # wrangler
 .wrangler/
