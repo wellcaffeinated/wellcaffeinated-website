@@ -7,6 +7,13 @@
     "astro-docs": {
       "type": "http",
       "url": "https://mcp.docs.astro.build/mcp"
+    },
+    "mdn": {
+      "type": "http",
+      "url": "https://mcp.mdn.mozilla.net/",
+      "headers": {
+        "X-Moz-1st-Party-Data-Opt-Out": "1"
+      }
     }
   }
 }

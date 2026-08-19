@@ -74,8 +74,11 @@ connected.
 
 Cloudflare's official skills are vendored in `.claude/skills/` (`cloudflare`,
 `wrangler`, `workers-best-practices`) — see the README there for provenance and
-how to update them. `.mcp.json` wires up the Cloudflare and Astro docs MCP
-servers; prefer retrieving from those over recalling API details.
+how to update them. `.mcp.json` wires up the Cloudflare, Astro, and MDN docs
+MCP servers; prefer retrieving from those over recalling API details.
+
+MDN's server is experimental and Mozilla logs queries during that phase, so the
+config sends `X-Moz-1st-Party-Data-Opt-Out: 1`. It may be withdrawn at any time.
 
 Astro publishes no skill for building sites (the ones in `withastro/astro` are
 for contributing to Astro itself), so the docs MCP server is its whole surface.
