@@ -1,0 +1,18 @@
+---
+// Reusable <head> contents. Demonstrates typed props with a default and
+// building a canonical URL from `Astro.site` + the current path.
+interface Props {
+  title: string
+  description?: string
+}
+
+const { title, description = 'wellcaffeinated.net' } = Astro.props
+const canonicalURL = new URL(Astro.url.pathname, Astro.site)
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="canonical" href={canonicalURL} />
+<meta name="description" content={description} />
+<title>{title}</title>

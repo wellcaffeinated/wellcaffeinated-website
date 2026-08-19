@@ -1,0 +1,43 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+*-debug.log*
+logs/
+
+# environment variables
+.env
+.env.production
+.env.local
+
+# macOS
+.DS_Store
+
+# JetBrains
+.idea
+
+# Environment artifacts (sandbox/container bind-mounts)
+.claude/
+HEAD
+objects
+refs
+hooks
+config
+.gitconfig
+.gitmodules
+.bashrc
+.bash_profile
+.zshrc
+.zprofile
+.profile
+.ripgreprc
+.mcp.json
+
+# wrangler
+.wrangler/

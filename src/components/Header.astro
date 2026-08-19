@@ -1,0 +1,36 @@
+---
+// Site header. Demonstrates composing a smaller component (HeaderLink) and
+// scoping layout styles to the component.
+import HeaderLink from './HeaderLink.astro'
+---
+
+<header>
+  <nav>
+    <a href="/" class="site-title">wellcaffeinated.net</a>
+    <div class="links">
+      <HeaderLink href="/">Home</HeaderLink>
+      <HeaderLink href="/blog/">Blog</HeaderLink>
+    </div>
+  </nav>
+</header>
+
+<style>
+  header {
+    margin-bottom: 2rem;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .site-title {
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .links {
+    display: flex;
+    gap: 1rem;
+  }
+</style>

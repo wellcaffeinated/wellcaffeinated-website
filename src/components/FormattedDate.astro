@@ -1,0 +1,22 @@
+---
+// A focused, single-purpose component: render a Date as a semantic <time>.
+// Reused anywhere a post date is shown, so formatting stays consistent.
+interface Props {
+  date: Date
+}
+
+const { date } = Astro.props
+---
+
+<time datetime={date.toISOString()}>
+  {
+    date.toLocaleDateString('en-CA', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      // Dates are authored as calendar days (UTC midnight); format in UTC so
+      // they don't shift a day in timezones behind UTC.
+      timeZone: 'UTC',
+    })
+  }
+</time>
