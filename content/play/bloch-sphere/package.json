@@ -1,0 +1,12 @@
+{
+  "name": "@toys/bloch-sphere",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@qbead/bloch-sphere": "^0.3.0",
+    "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.175.0"
+  }
+}

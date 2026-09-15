@@ -99,8 +99,17 @@ export const mount: ToyModule['mount'] = ({ el, constants }) => {
 }
 ```
 
-If a toy ever needs a heavy dependency the rest of the site should not
-carry, promote it to a pnpm workspace package; until then a folder is enough.
+**Toys that need libraries** add a `package.json` in their folder listing
+just those libraries; `pnpm-workspace.yaml` makes every `content/play/*`
+folder a workspace package, so `pnpm install` at the root picks it up. The
+toy resolves its own copy, so two toys may pin different versions of the
+same library and a new toy can never break an old one. Vite still bundles
+each toy as its own lazy chunk, so a library only downloads when its toy is
+opened. `content/play/bloch-sphere/` is the worked example.
+
+Shared code in `src/lib` depends on nothing, so it can serve every toy;
+Jasper keeps it backwards compatible. A helper that wraps a specific library
+does not belong there.
 
 ## How the shell works
 
@@ -179,8 +188,8 @@ for contributing to Astro itself), so the docs MCP server is its whole surface.
 
 Shell foundation. The archive holds four real posts migrated from the old
 site; thoughts, projects and toys are mostly **placeholders** marked as such in
-their bodies. Toys are slots (`ToyFrame` mounts a `toy.ts` when a folder
-has one; none do yet). Search is a
+their bodies. `bloch-sphere` is the one real toy (and the test case for
+per-toy packages); the other toys are slots with no `toy.ts` yet. Search is a
 substring match over titles, tags and descriptions (`src/shell/search.ts`);
 Pagefind is the intended swap. Not built yet, on purpose: games, the idle
 white-rabbit sequence, `set` for toy constants, the ✦ discovery counter, real
