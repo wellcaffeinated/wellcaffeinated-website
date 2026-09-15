@@ -1,6 +1,7 @@
 // The browser's view of the site's content: a flat index built at build time
 // by `src/pages/shell/index.json.ts`. Bodies are not included; full-text
 // search is a later swap (Pagefind).
+import type { Status } from '../lib/status'
 import { itemHref, SECTIONS, type Section, SHELL_INDEX_HREF } from './paths'
 
 export interface ShellItem {
@@ -10,6 +11,8 @@ export interface ShellItem {
   title: string
   description: string
   tags: string[]
+  /** Set only on content that never reaches the build; see lib/status.ts. */
+  status?: Status
   /** ISO date for thoughts and archive posts. */
   date?: string
   year?: number

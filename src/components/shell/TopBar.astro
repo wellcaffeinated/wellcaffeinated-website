@@ -1,14 +1,17 @@
 ---
 // The bar that never leaves. Its two exits (☰ and ↺) work in every mode.
+import { type Status, STATUS_LABELS } from '../../lib/status'
 import { SITE_NAME } from '../../shell/config'
 import { hrefFor } from '../../shell/router'
 
 interface Props {
   /** The command that opened this page, shown after the site name. */
   cmd?: string
+  /** Unpublished content says so here, so a dev-only page is never mistaken. */
+  status?: Status
 }
 
-const { cmd } = Astro.props
+const { cmd, status } = Astro.props
 ---
 
 <header class="bar">
@@ -17,6 +20,7 @@ const { cmd } = Astro.props
     <span class="crumb">
       {SITE_NAME}{cmd && <span class="crumb-cmd"> · <span class="dollar">$</span> {cmd}</span>}
     </span>
+    {status && <span class="status">{STATUS_LABELS[status]}</span>}
   </div>
   <nav class="right" aria-label="Shell">
     {cmd && <a href="/" class="action strong" data-back>esc ↩</a>}
@@ -27,6 +31,15 @@ const { cmd } = Astro.props
 </header>
 
 <style>
+  .status {
+    flex: none;
+    padding: 3px 8px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--ok);
+    white-space: nowrap;
+  }
   .bar {
     position: sticky;
     top: 0;

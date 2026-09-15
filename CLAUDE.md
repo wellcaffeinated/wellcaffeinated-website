@@ -83,6 +83,31 @@ error recovery; two exits (☰ and ↺) in every mode.
   `shell.css` (log + descriptor classes; global because the renderer creates
   those nodes in the browser).
 
+## Content that is not for the site
+
+Two ways to keep something in the repo but off the live site:
+
+- **`status:` in frontmatter** — `draft` (on its way to being published) or
+  `reference` (kept deliberately, to show how something is done). Absent means
+  published. Both behave identically: **present in `pnpm dev`, absent from
+  `pnpm build`**, and tagged `✎ … · dev only` in every listing and in the top
+  bar of their own page, so nothing unpublished is ever mistaken for live.
+  Works on thoughts, archive, projects and play.
+- **A path segment starting with `_`** — `content/play/_scratch/`,
+  `content/thoughts/_notes.md`. Never loaded at all, so never validated and
+  never published; use it for things that should not even have to parse.
+  Astro applies this rule to `src/pages` by itself but the `glob()` loader does
+  not, so `src/content.config.ts` says it (`NOT_CONTENT`).
+
+Prefer `status` for anything you want to look at: it stays schema-checked and
+you can open it in dev. The filter is one predicate in `src/lib/content.ts`,
+and every surface — section pages, `[slug]` pages, `ls`, search, prev/next,
+`/shell/index.json` — inherits it because nothing else calls `getCollection`.
+`pnpm preview` serves the build, so it is the honest check of what ships.
+
+Changing a loader `pattern` does not invalidate the content cache of a running
+dev server: restart it, or a `_` folder added to the config will still resolve.
+
 ## The content boundary
 
 `src/` is the foundation; `content/` is what Jasper writes. The direction

@@ -21,22 +21,26 @@ const newestFirst = (a: Article, b: Article) =>
 const byOrder = (a: Project | Toy, b: Project | Toy) =>
   a.data.order - b.data.order || a.data.title.localeCompare(b.data.title)
 
-const published = (entry: Article) => !entry.data.draft
+/**
+ * Every status there is means "not for the build", so having one at all is
+ * what hides an entry. A status that should publish would have to say so here.
+ */
+const shown = (entry: Entry) => import.meta.env.DEV || !entry.data.status
 
 export async function getThoughts(): Promise<Thought[]> {
-  return (await getCollection('thoughts', published)).sort(newestFirst)
+  return (await getCollection('thoughts', shown)).sort(newestFirst)
 }
 
 export async function getArchive(): Promise<ArchivePost[]> {
-  return (await getCollection('archive', published)).sort(newestFirst)
+  return (await getCollection('archive', shown)).sort(newestFirst)
 }
 
 export async function getProjects(): Promise<Project[]> {
-  return (await getCollection('projects')).sort(byOrder)
+  return (await getCollection('projects', shown)).sort(byOrder)
 }
 
 export async function getToys(): Promise<Toy[]> {
-  return (await getCollection('play')).sort(byOrder)
+  return (await getCollection('play', shown)).sort(byOrder)
 }
 
 /** The single about.md; the build fails loudly if it is missing. */
@@ -70,6 +74,7 @@ function baseItem(entry: Entry) {
     title: entry.data.title,
     description: entry.data.description,
     tags: entry.data.tags,
+    status: entry.data.status,
     href: itemHref(entry.collection, entry.id),
   }
 }

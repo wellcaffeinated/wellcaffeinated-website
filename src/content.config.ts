@@ -3,8 +3,17 @@
 import { defineCollection } from 'astro:content'
 import { glob } from 'astro/loaders'
 import { z } from 'astro/zod'
+import { STATUSES } from './lib/status'
 
 const CONTENT_ROOT = './content'
+
+// Anything under a path segment starting with `_` is not content at all: it is
+// never loaded, so it is never validated and never published. Astro applies
+// this rule to src/pages by itself, but the glob loader does not, so we say it.
+const NOT_CONTENT = ['!**/_*', '!**/_*/**']
+
+// Absent means published. See lib/status.ts.
+const status = z.enum(STATUSES).optional()
 
 const article = z.object({
   title: z.string(),
@@ -12,19 +21,25 @@ const article = z.object({
   pubDate: z.coerce.date(),
   updatedDate: z.coerce.date().optional(),
   tags: z.array(z.string()).default([]),
-  draft: z.boolean().default(false),
+  status,
 })
 
 // New writing. The section is called "Thoughts" everywhere it is shown.
 const thoughts = defineCollection({
-  loader: glob({ base: `${CONTENT_ROOT}/thoughts`, pattern: '**/*.md' }),
+  loader: glob({
+    base: `${CONTENT_ROOT}/thoughts`,
+    pattern: ['**/*.md', ...NOT_CONTENT],
+  }),
   schema: article,
 })
 
 // The old blog, migrated by hand from the Jekyll site. Kept searchable but
 // visually secondary.
 const archive = defineCollection({
-  loader: glob({ base: `${CONTENT_ROOT}/archive`, pattern: '**/*.md' }),
+  loader: glob({
+    base: `${CONTENT_ROOT}/archive`,
+    pattern: ['**/*.md', ...NOT_CONTENT],
+  }),
   schema: article.extend({
     // Path the post lived at on wellcaffeinated.net, for redirects at cutover.
     legacyPath: z.string().optional(),
@@ -32,7 +47,10 @@ const archive = defineCollection({
 })
 
 const projects = defineCollection({
-  loader: glob({ base: `${CONTENT_ROOT}/projects`, pattern: '**/*.md' }),
+  loader: glob({
+    base: `${CONTENT_ROOT}/projects`,
+    pattern: ['**/*.md', ...NOT_CONTENT],
+  }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
@@ -40,6 +58,7 @@ const projects = defineCollection({
     years: z.string(),
     alive: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
+    status,
     role: z.string().optional(),
     stack: z.string().optional(),
     links: z
@@ -65,7 +84,7 @@ const PLACE = z.enum([
 const play = defineCollection({
   loader: glob({
     base: `${CONTENT_ROOT}/play`,
-    pattern: '*/index.md',
+    pattern: ['*/index.md', ...NOT_CONTENT],
     generateId: ({ entry }) => entry.split('/')[0],
   }),
   schema: z.object({
@@ -77,6 +96,7 @@ const play = defineCollection({
     ink: z.string().optional(),
     tilt: z.boolean().default(false),
     game: z.boolean().default(false),
+    status,
     // How the page is arranged around the toy. A layout.astro in the toy's
     // own folder overrides this.
     layout: z.enum(['stage', 'article', 'scroll']).default('stage'),

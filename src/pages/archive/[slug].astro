@@ -24,7 +24,7 @@ const suggestions = [
 ].filter((s) => !!s)
 ---
 
-<ShellLayout title={entry.data.title} description={entry.data.description} cmd={cmd} next={suggestions}>
+<ShellLayout title={entry.data.title} description={entry.data.description} cmd={cmd} status={entry.data.status} next={suggestions}>
   <ArticleView
     title={entry.data.title}
     section="archive"

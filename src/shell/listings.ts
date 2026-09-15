@@ -1,11 +1,23 @@
 // Index items → list descriptors. Pure functions shared by the `ls` command
 // (browser) and the static section pages (build), so both agree on what a
 // listing looks like.
+
 import type { Card, Output, Row } from '../lib/shell'
+import { STATUS_LABELS } from '../lib/status'
 import { itemsIn, type ShellIndex, type ShellItem } from './content'
 
 export const openCmd = (item: Pick<ShellItem, 'section' | 'slug'>) =>
   `open ${item.section}/${item.slug}`
+
+const markOf = (item: ShellItem) =>
+  item.status ? STATUS_LABELS[item.status] : undefined
+
+/** The mark leads, so an unpublished row reads as unpublished first. */
+const withMark = (item: ShellItem, meta: string) => {
+  const mark = markOf(item)
+  if (!mark) return meta
+  return meta ? `${mark} · ${meta}` : mark
+}
 
 const SECRETS_ROW: Row = {
   title: '.secrets/',
@@ -35,7 +47,7 @@ export function projectCards(projects: ShellItem[]): Card[] {
   return projects.map((project) => ({
     title: project.title,
     meta: `${project.kind} · ${project.years}`,
-    badge: project.alive ? '● alive' : 'retired',
+    badge: markOf(project) ?? (project.alive ? '● alive' : 'retired'),
     cmd: openCmd(project),
   }))
 }
@@ -50,6 +62,7 @@ export function toyCards(toys: ShellItem[]): Card[] {
   return toys.map((toy) => ({
     title: toy.title,
     meta: toyMeta(toy),
+    badge: markOf(toy),
     cmd: openCmd(toy),
     color: toy.color,
     ink: toy.ink,
@@ -80,7 +93,7 @@ export function thoughtRows(
   const rows: Row[] = thoughts.map((thought, i) => ({
     k: yearKey(thought, thoughts[i - 1]),
     title: thought.title,
-    meta: `${thought.minutes} min`,
+    meta: withMark(thought, `${thought.minutes} min`),
     cmd: openCmd(thought),
   }))
   if (archive.length === 0) return rows
@@ -91,7 +104,7 @@ export function archiveRows(archive: ShellItem[]): Row[] {
   return archive.map((post) => ({
     k: String(post.year),
     title: post.title,
-    meta: `${post.minutes} min · archive`,
+    meta: withMark(post, `${post.minutes} min · archive`),
     cmd: openCmd(post),
   }))
 }
