@@ -134,6 +134,11 @@ Unlike `toy.ts`, which is lazy and can only break its own page, a
 `layout.astro` is compiled with the site: a mistake in one fails `pnpm build`.
 `pnpm check` type-checks it, so errors surface before the build does.
 
+`content/play/bloch-sphere/` is the worked example of both: its `layout.astro`
+writes the gate keys and the θ/φ readout, its `toy.ts` drives them, and the toy
+falls back to autoplaying on its own when a built-in layout gives it only a
+box.
+
 **Toys that need libraries** add a `package.json` in their folder listing
 just those libraries; `pnpm-workspace.yaml` makes every `content/play/*`
 folder a workspace package, so `pnpm install` at the root picks it up. The
@@ -224,7 +229,8 @@ for contributing to Astro itself), so the docs MCP server is its whole surface.
 Shell foundation. The archive holds four real posts migrated from the old
 site; thoughts, projects and toys are mostly **placeholders** marked as such in
 their bodies. `bloch-sphere` is the one real toy (and the test case for
-per-toy packages); the other toys are slots with no `toy.ts` yet. Search is a
+per-toy packages and for a toy's own `layout.astro`); the other toys are slots
+with no `toy.ts` yet. Search is a
 substring match over titles, tags and descriptions (`src/shell/search.ts`);
 Pagefind is the intended swap. Not built yet, on purpose: games, the idle
 white-rabbit sequence, `set` for toy constants, the ✦ discovery counter, real
