@@ -1,0 +1,106 @@
+---
+// The toy stays put and the writing moves: the figure is sticky in its column
+// while the steps scroll past it. Chrome flows, so only `none` applies.
+import type { ToyLayoutProps } from './types'
+import ConstantsPanel from './ConstantsPanel.astro'
+import ToyMount from './ToyMount.astro'
+
+type Props = ToyLayoutProps
+
+const { toy, places } = Astro.props
+const { title, description, constants } = toy.data
+---
+
+<div class="scroll">
+  <div class="pinned">
+    <div class="figure">
+      <ToyMount title={title} description={description} />
+    </div>
+    {
+      constants.length > 0 && places.constants !== 'none' && (
+        <div class="readout">
+          <ConstantsPanel constants={constants} />
+        </div>
+      )
+    }
+  </div>
+  {
+    places.notes !== 'none' && (
+      <div class="steps">
+        <h1>{title}</h1>
+        <p class="lede">{description}</p>
+        <div class="body prose">
+          <slot />
+        </div>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .scroll {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 360px);
+    gap: 28px;
+    align-items: start;
+    padding: 16px 20px 80px;
+    animation: rise var(--rise) both;
+  }
+  /* Figure and readout together stay inside the space between the bars, so
+     the readout can never be cut off by the bottom bar. */
+  .pinned {
+    position: sticky;
+    top: calc(var(--bar-h) + 16px);
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--bar-h) - 84px);
+  }
+  .figure {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--toy-bg);
+    color: var(--toy-ink);
+  }
+  .readout {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(24px, 4vw, 32px);
+    line-height: 1.12;
+    margin: 24px 0 0;
+    font-weight: 400;
+  }
+  .lede {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .body {
+    margin-top: 24px;
+  }
+  /* Narrow: the figure pins to the top and the steps run underneath it. */
+  @media (max-width: 760px) {
+    .scroll {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .pinned {
+      height: auto;
+      top: var(--bar-h);
+      z-index: 1;
+      padding: 8px 0;
+      background: var(--bg);
+    }
+    .figure {
+      flex: none;
+      height: 52dvh;
+    }
+  }
+</style>

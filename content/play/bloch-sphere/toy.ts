@@ -52,7 +52,7 @@ function createSphere(el: HTMLElement): BlochSphere {
   return sphere
 }
 
-export const mount: ToyModule['mount'] = ({ el, constants }) => {
+export const mount: ToyModule['mount'] = ({ el, constants, onResize }) => {
   const stepMs = (constants.step ?? DEFAULT_STEP_S) * MS_PER_S
   const phase = (constants.phase ?? DEFAULT_PHASE_DEG) * DEGREES
 
@@ -81,13 +81,13 @@ export const mount: ToyModule['mount'] = ({ el, constants }) => {
     }
   }
 
-  const onResize = () => sphere.resize()
-  window.addEventListener('resize', onResize, { passive: true })
+  // The box is the layout's to size, and it can change without the window
+  // changing — an article column reflowing, say.
+  onResize(({ width, height }) => sphere.resize(width, height))
   walk()
 
   return () => {
     running = false
-    window.removeEventListener('resize', onResize)
     sphere.dispose()
   }
 }

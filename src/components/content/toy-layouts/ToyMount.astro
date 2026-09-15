@@ -1,0 +1,40 @@
+---
+// The hole a toy paints into, plus the placeholder that shows until it does.
+// The layout gives this element its size; the toy is told never to assume one.
+interface Props {
+  title: string
+  description: string
+}
+
+const { title, description } = Astro.props
+---
+
+<div class="hole">
+  <div class="mount" data-toy-mount></div>
+  <p class="note" data-toy-note>
+    <strong>{title}</strong> · toy mounts here (its own canvas / framework). {description}
+  </p>
+</div>
+
+<style>
+  /* Fills a parent with a definite height (a figure), or grows to fill one
+     that lays its children out in a column (the stage). */
+  .hole {
+    position: relative;
+    flex: 1;
+    height: 100%;
+  }
+  .mount {
+    position: absolute;
+    inset: 0;
+  }
+  .note {
+    position: absolute;
+    left: 16px;
+    top: 14px;
+    margin: 0;
+    max-width: 60%;
+    font-size: var(--text-xs);
+    opacity: 0.7;
+  }
+</style>

@@ -71,7 +71,8 @@ error recovery; two exits (☰ and ↺) in every mode.
   `Log`, `Menu`, `TakeoverBar`, `ThemeScript`, `BrokenOverlay`.
 - `src/components/content/` — content views: `ArticleView`, `ProjectView`,
   `ToyFrame`, `ManPage`, and `CardGrid` / `RowList` / `Listing` (static twins of
-  the log renderers for section pages).
+  the log renderers for section pages). `toy-layouts/` holds one component per
+  toy layout plus the two pieces they share, `ToyMount` and `ConstantsPanel`.
 - `src/layouts/ShellLayout.astro` — every page. `mode="shell"` (log + prompt) or
   `mode="takeover"` (content + bars).
 - `src/pages/` — `/` (the shell), `/404`, `/about`, `/{thoughts,archive,
@@ -93,11 +94,27 @@ A toy that needs code adds `toy.ts` next to its `index.md`:
 
 ```ts
 import type { ToyModule } from '@lib/toy'
-export const mount: ToyModule['mount'] = ({ el, constants }) => {
+export const mount: ToyModule['mount'] = ({ el, constants, onResize }) => {
   // draw into el; constants come from the frontmatter, by name
+  onResize(({ width, height }) => {}) // el is the layout's to size
   return () => {} // optional cleanup
 }
 ```
+
+`el` is a box, not the viewport: a layout decides how big it is, and it can
+change size without the window changing. Size from `onResize`, never from
+`window`.
+
+**How the page is arranged** is the `layout` field in a toy's frontmatter:
+`stage` (the default — the toy owns everything between the bars, the writeup
+sits on top of it), `article` (a reading column with the toy as a figure) or
+`scroll` (the toy pinned while the writing scrolls past). `ToyFrame` keeps
+what makes a toy a toy — identity, constants, colours, mounting — and picks
+the layout from a `LAYOUTS` table; a new layout is one component plus one key.
+`places` moves the writeup and the constants readout between corners (the
+stage positions absolutely, so only it reads corners; the layouts that flow
+read only `none`), and `aspect` sets the figure's shape where a layout gives
+the toy a box of its own.
 
 **Toys that need libraries** add a `package.json` in their folder listing
 just those libraries; `pnpm-workspace.yaml` makes every `content/play/*`

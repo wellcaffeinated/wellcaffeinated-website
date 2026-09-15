@@ -1,19 +1,39 @@
 ---
-// Frame, not skin: a toy owns everything between the bars and paints in its
-// own style. The script below mounts content/play/<slug>/toy.ts if there is
-// one; until then the frame is a labelled slot.
+// Frame, not skin: this owns what makes a toy a toy — its identity, its
+// constants, its colours and the mounting — and hands the arranging to a
+// layout. The script below mounts content/play/<slug>/toy.ts if there is one;
+// until then the layout's hole is a labelled slot.
 import type { Toy } from '../../lib/content'
 import type { ToyConstants } from '../../lib/toy'
+import ArticleLayout from './toy-layouts/ArticleLayout.astro'
+import ScrollLayout from './toy-layouts/ScrollLayout.astro'
+import StageLayout from './toy-layouts/StageLayout.astro'
+import type { Places } from './toy-layouts/types'
 
 interface Props {
   toy: Toy
 }
 
+// One layout per name, the way render.ts keeps one renderer per descriptor.
+const LAYOUTS = {
+  stage: StageLayout,
+  article: ArticleLayout,
+  scroll: ScrollLayout,
+} as const
+
+// Corners the stage understands; the layouts that flow read only `none`.
+const DEFAULT_PLACES = {
+  notes: 'bottom-left',
+  constants: 'top-right',
+} satisfies Required<Places>
+
 const { toy } = Astro.props
-const { title, description, color, ink, constants } = toy.data
+const { color, ink, constants, layout, places } = toy.data
 const constantsByName: ToyConstants = Object.fromEntries(
   constants.map((constant) => [constant.name, constant.value]),
 )
+
+const Layout = LAYOUTS[layout]
 ---
 
 <main
@@ -22,29 +42,13 @@ const constantsByName: ToyConstants = Object.fromEntries(
   data-toy={toy.id}
   data-constants={JSON.stringify(constantsByName)}
 >
-  <div class="mount" data-toy-mount></div>
-  <div class="note" data-toy-note>
-    <strong>{title}</strong> · toy mounts here (its own canvas / framework). {description}
-  </div>
-  {
-    constants.length > 0 && (
-      <dl class="constants">
-        <dt>constants · also "set &lt;name&gt; &lt;value&gt;"</dt>
-        {constants.map((k) => (
-          <dd>
-            {k.name} <span class="value">{k.value}</span> <span class="unit">{k.unit}</span>
-          </dd>
-        ))}
-      </dl>
-    )
-  }
-  <div class="notes prose">
+  <Layout toy={toy} places={{ ...DEFAULT_PLACES, ...places }}>
     <slot />
-  </div>
+  </Layout>
 </main>
 
 <script>
-  import { loadToy, type ToyConstants } from '../../lib/toy'
+  import { createToyContext, loadToy, type ToyConstants } from '../../lib/toy'
 
   async function mountToy(frame: HTMLElement) {
     const slug = frame.dataset.toy ?? ''
@@ -53,7 +57,7 @@ const constantsByName: ToyConstants = Object.fromEntries(
     if (!el || !loading) return
     const constants: ToyConstants = JSON.parse(frame.dataset.constants ?? '{}')
     const toy = await loading
-    toy.mount({ el, constants })
+    toy.mount(createToyContext(el, constants))
     const note = frame.querySelector<HTMLElement>('[data-toy-note]')
     if (note) note.hidden = true
   }
@@ -65,59 +69,7 @@ const constantsByName: ToyConstants = Object.fromEntries(
 <style>
   .frame {
     flex: 1;
-    position: relative;
-    min-height: calc(100dvh - var(--bar-h) - 52px);
-    background: var(--toy-bg);
-    color: var(--toy-ink);
-    background-image: radial-gradient(rgb(0 0 0 / 0.1) 1px, transparent 1px);
-    background-size: 18px 18px;
-    animation: rise var(--rise) both;
-  }
-  .mount {
-    position: absolute;
-    inset: 0;
-  }
-  .note {
-    position: absolute;
-    left: 16px;
-    top: 14px;
-    max-width: 60%;
-    font-size: var(--text-xs);
-    opacity: 0.7;
-  }
-  .constants {
-    position: absolute;
-    right: 14px;
-    top: 12px;
-    margin: 0;
-    padding: 8px 12px;
-    border-radius: var(--radius);
-    background: rgb(255 255 255 / 0.7);
-    color: #1a1a1a;
-    backdrop-filter: blur(4px);
-    font-size: var(--text-xs);
-    line-height: 1.7;
-  }
-  dt {
-    font-size: 10px;
-    color: #666;
-  }
-  dd {
-    margin: 0;
-  }
-  .value {
-    color: #5b3fae;
-  }
-  .unit {
-    color: #999;
-  }
-  .notes {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
-    max-width: 480px;
-    font-size: var(--text-sm);
-    opacity: 0.8;
+    display: flex;
+    flex-direction: column;
   }
 </style>

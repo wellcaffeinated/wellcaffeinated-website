@@ -50,6 +50,16 @@ const projects = defineCollection({
   }),
 })
 
+// Where a layout puts a block of chrome. Corners are meaningful in the stage
+// layout, which positions absolutely; the layouts that flow honour only `none`.
+const PLACE = z.enum([
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+  'none',
+])
+
 // Toys. One folder each: index.md is the writeup and frontmatter, toy.ts (if
 // present) is the code ToyFrame mounts. The folder name is the slug.
 const play = defineCollection({
@@ -67,6 +77,16 @@ const play = defineCollection({
     ink: z.string().optional(),
     tilt: z.boolean().default(false),
     game: z.boolean().default(false),
+    // How the page is arranged around the toy. A layout.astro in the toy's
+    // own folder overrides this.
+    layout: z.enum(['stage', 'article', 'scroll']).default('stage'),
+    // Per-toy nudges to where the chrome sits. Each layout has its own
+    // defaults; these override them.
+    places: z
+      .object({ notes: PLACE.optional(), constants: PLACE.optional() })
+      .default({}),
+    // Width : height of the toy's box in the layouts that give it one.
+    aspect: z.number().positive().default(1.6),
     constants: z
       .array(
         z.object({

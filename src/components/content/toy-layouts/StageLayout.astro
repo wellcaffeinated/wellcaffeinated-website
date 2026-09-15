@@ -1,0 +1,69 @@
+---
+// The default: the toy owns everything between the bars and the writeup sits
+// on top of it. Chrome is positioned absolutely, so `places` corners apply.
+import type { ToyLayoutProps } from './types'
+import ConstantsPanel from './ConstantsPanel.astro'
+import ToyMount from './ToyMount.astro'
+
+type Props = ToyLayoutProps
+
+const { toy, places } = Astro.props
+const { title, description, constants } = toy.data
+---
+
+<div class="stage">
+  <ToyMount title={title} description={description} />
+  {
+    constants.length > 0 && places.constants !== 'none' && (
+      <div class="chrome" data-place={places.constants}>
+        <ConstantsPanel constants={constants} />
+      </div>
+    )
+  }
+  {
+    places.notes !== 'none' && (
+      <div class="chrome notes prose" data-place={places.notes}>
+        <slot />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: calc(100dvh - var(--bar-h) - 52px);
+    background: var(--toy-bg);
+    color: var(--toy-ink);
+    background-image: radial-gradient(rgb(0 0 0 / 0.1) 1px, transparent 1px);
+    background-size: 18px 18px;
+    animation: rise var(--rise) both;
+  }
+  .chrome {
+    position: absolute;
+  }
+  .chrome[data-place='top-left'] {
+    left: 16px;
+    top: 14px;
+  }
+  .chrome[data-place='top-right'] {
+    right: 16px;
+    top: 14px;
+  }
+  .chrome[data-place='bottom-left'] {
+    left: 16px;
+    bottom: 16px;
+  }
+  .chrome[data-place='bottom-right'] {
+    right: 16px;
+    bottom: 16px;
+  }
+  .notes {
+    max-width: min(480px, calc(100% - 32px));
+    font-size: var(--text-sm);
+    opacity: 0.8;
+  }
+</style>
