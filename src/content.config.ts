@@ -1,6 +1,10 @@
+// Everything written lives under ./content, outside src: the site discovers
+// it through these loaders and never imports a specific file.
 import { defineCollection } from 'astro:content'
 import { glob } from 'astro/loaders'
 import { z } from 'astro/zod'
+
+const CONTENT_ROOT = './content'
 
 const article = z.object({
   title: z.string(),
@@ -13,14 +17,14 @@ const article = z.object({
 
 // New writing. The section is called "Thoughts" everywhere it is shown.
 const thoughts = defineCollection({
-  loader: glob({ base: './src/thoughts', pattern: '**/*.md' }),
+  loader: glob({ base: `${CONTENT_ROOT}/thoughts`, pattern: '**/*.md' }),
   schema: article,
 })
 
 // The old blog, migrated by hand from the Jekyll site. Kept searchable but
 // visually secondary.
 const archive = defineCollection({
-  loader: glob({ base: './src/archive', pattern: '**/*.md' }),
+  loader: glob({ base: `${CONTENT_ROOT}/archive`, pattern: '**/*.md' }),
   schema: article.extend({
     // Path the post lived at on wellcaffeinated.net, for redirects at cutover.
     legacyPath: z.string().optional(),
@@ -28,7 +32,7 @@ const archive = defineCollection({
 })
 
 const projects = defineCollection({
-  loader: glob({ base: './src/projects', pattern: '**/*.md' }),
+  loader: glob({ base: `${CONTENT_ROOT}/projects`, pattern: '**/*.md' }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
@@ -46,10 +50,14 @@ const projects = defineCollection({
   }),
 })
 
-// Toys. Each one will eventually mount its own module into the play frame;
-// for now the frontmatter describes the slot.
+// Toys. One folder each: index.md is the writeup and frontmatter, toy.ts (if
+// present) is the code ToyFrame mounts. The folder name is the slug.
 const play = defineCollection({
-  loader: glob({ base: './src/play', pattern: '**/*.md' }),
+  loader: glob({
+    base: `${CONTENT_ROOT}/play`,
+    pattern: '*/index.md',
+    generateId: ({ entry }) => entry.split('/')[0],
+  }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
@@ -72,4 +80,23 @@ const play = defineCollection({
   }),
 })
 
-export const collections = { thoughts, archive, projects, play }
+// `man jasper`: the about page as a manual page. A single file.
+const about = defineCollection({
+  loader: glob({ base: CONTENT_ROOT, pattern: 'about.md' }),
+  schema: z.object({
+    name: z.string(),
+    tagline: z.string(),
+    synopsis: z.string(),
+    status: z.string(),
+    bugs: z.string(),
+    seeAlso: z.array(z.object({ label: z.string(), href: z.string() })),
+  }),
+})
+
+// What `cat hello.md` prints on boot. A single file.
+const hello = defineCollection({
+  loader: glob({ base: CONTENT_ROOT, pattern: 'hello.md' }),
+  schema: z.object({ title: z.string() }),
+})
+
+export const collections = { thoughts, archive, projects, play, about, hello }

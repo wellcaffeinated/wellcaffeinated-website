@@ -58,9 +58,15 @@ error recovery; two exits (☰ and ↺) in every mode.
   `theme.ts`, `config.ts` (chips, prompt user, boot lines, storage keys).
 - `src/lib/content.ts` — server-side content helpers: sorted collections,
   reading time, and `toShellItem` (collection entry → index item).
-- `src/thoughts/`, `src/archive/`, `src/projects/`, `src/play/` — content
-  collections (markdown + frontmatter), schemas in `src/content.config.ts`.
-  `src/about.md` and `src/hello.md` are single markdown files imported directly.
+- `content/` — **everything written**, outside `src/` on purpose.
+  `thoughts/`, `archive/`, `projects/` hold markdown + frontmatter; `play/`
+  holds one folder per toy (`index.md` is the writeup, an optional `toy.ts`
+  is the code); `about.md` and `hello.md` are single-file collections.
+  Schemas in `src/content.config.ts`, which is the only place `src/` names
+  a content path.
+- `src/lib/toy.ts` — the toy contract (`mount({ el, constants })`) and
+  `loadToy(slug)`, which finds `content/play/<slug>/toy.ts` through
+  `import.meta.glob`.
 - `src/components/shell/` — the chrome: `TopBar`, `Dock` (chips + prompt),
   `Log`, `Menu`, `TakeoverBar`, `ThemeScript`, `BrokenOverlay`.
 - `src/components/content/` — content views: `ArticleView`, `ProjectView`,
@@ -73,6 +79,28 @@ error recovery; two exits (☰ and ↺) in every mode.
 - `src/styles/` — `theme.css` (all tokens), `global.css` (reset, prose),
   `shell.css` (log + descriptor classes; global because the renderer creates
   those nodes in the browser).
+
+## The content boundary
+
+`src/` is the foundation; `content/` is what Jasper writes. The direction
+of dependency is one way: content may import site helpers via the `@lib/*`
+alias (`tsconfig.json` → `src/lib/`), and `src/` discovers content only
+through the collection loaders and `loadToy`. Nothing in `src/` imports a
+specific piece of content, so deleting a toy folder cannot break the site
+and adding one never touches `src/`.
+
+A toy that needs code adds `toy.ts` next to its `index.md`:
+
+```ts
+import type { ToyModule } from '@lib/toy'
+export const mount: ToyModule['mount'] = ({ el, constants }) => {
+  // draw into el; constants come from the frontmatter, by name
+  return () => {} // optional cleanup
+}
+```
+
+If a toy ever needs a heavy dependency the rest of the site should not
+carry, promote it to a pnpm workspace package; until then a folder is enough.
 
 ## How the shell works
 
@@ -151,7 +179,8 @@ for contributing to Astro itself), so the docs MCP server is its whole surface.
 
 Shell foundation. The archive holds four real posts migrated from the old
 site; thoughts, projects and toys are mostly **placeholders** marked as such in
-their bodies. Toys are slots (`ToyFrame`), not simulations. Search is a
+their bodies. Toys are slots (`ToyFrame` mounts a `toy.ts` when a folder
+has one; none do yet). Search is a
 substring match over titles, tags and descriptions (`src/shell/search.ts`);
 Pagefind is the intended swap. Not built yet, on purpose: games, the idle
 white-rabbit sequence, `set` for toy constants, the ✦ discovery counter, real

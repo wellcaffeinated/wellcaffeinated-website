@@ -1,7 +1,9 @@
 ---
 // Frame, not skin: a toy owns everything between the bars and paints in its
-// own style. This is the slot; each toy will mount its own module here.
+// own style. The script below mounts content/play/<slug>/toy.ts if there is
+// one; until then the frame is a labelled slot.
 import type { Toy } from '../../lib/content'
+import type { ToyConstants } from '../../lib/toy'
 
 interface Props {
   toy: Toy
@@ -9,10 +11,19 @@ interface Props {
 
 const { toy } = Astro.props
 const { title, description, color, ink, constants } = toy.data
+const constantsByName: ToyConstants = Object.fromEntries(
+  constants.map((constant) => [constant.name, constant.value]),
+)
 ---
 
-<main class="frame" style={`--toy-bg:${color ?? 'var(--panel)'};--toy-ink:${ink ?? 'var(--fg)'}`} data-toy={toy.id}>
-  <div class="note">
+<main
+  class="frame"
+  style={`--toy-bg:${color ?? 'var(--panel)'};--toy-ink:${ink ?? 'var(--fg)'}`}
+  data-toy={toy.id}
+  data-constants={JSON.stringify(constantsByName)}
+>
+  <div class="mount" data-toy-mount></div>
+  <div class="note" data-toy-note>
     <strong>{title}</strong> · toy mounts here (its own canvas / framework). {description}
   </div>
   {
@@ -32,6 +43,25 @@ const { title, description, color, ink, constants } = toy.data
   </div>
 </main>
 
+<script>
+  import { loadToy, type ToyConstants } from '../../lib/toy'
+
+  async function mountToy(frame: HTMLElement) {
+    const slug = frame.dataset.toy ?? ''
+    const el = frame.querySelector<HTMLElement>('[data-toy-mount]')
+    const loading = loadToy(slug)
+    if (!el || !loading) return
+    const constants: ToyConstants = JSON.parse(frame.dataset.constants ?? '{}')
+    const toy = await loading
+    toy.mount({ el, constants })
+    const note = frame.querySelector<HTMLElement>('[data-toy-note]')
+    if (note) note.hidden = true
+  }
+
+  const frame = document.querySelector<HTMLElement>('[data-toy]')
+  if (frame) mountToy(frame)
+</script>
+
 <style>
   .frame {
     flex: 1;
@@ -42,6 +72,10 @@ const { title, description, color, ink, constants } = toy.data
     background-image: radial-gradient(rgb(0 0 0 / 0.1) 1px, transparent 1px);
     background-size: 18px 18px;
     animation: rise var(--rise) both;
+  }
+  .mount {
+    position: absolute;
+    inset: 0;
   }
   .note {
     position: absolute;

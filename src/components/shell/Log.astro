@@ -2,8 +2,12 @@
 // The scrolling history. Server-renders the first two entries (boot and
 // `cat hello.md`) so the page reads without JavaScript; the host adopts them
 // as entries, or replaces them when a session is being restored.
-import { Content as Hello } from '../../hello.md'
+import { render } from 'astro:content'
+import { getHello } from '../../lib/content'
 import { BOOT_LINES, PROMPT_USER } from '../../shell/config'
+
+const hello = await getHello()
+const Hello = hello ? (await render(hello)).Content : null
 ---
 
 <main class="log" data-log>
@@ -18,7 +22,7 @@ import { BOOT_LINES, PROMPT_USER } from '../../shell/config'
       <span>cat hello.md</span>
     </div>
     <div class="out-html prose" data-fragment="hello">
-      <Hello />
+      {Hello && <Hello />}
     </div>
   </div>
 </main>

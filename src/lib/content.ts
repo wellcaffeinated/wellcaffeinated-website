@@ -1,6 +1,6 @@
 // Server-side content helpers shared by pages and the shell index endpoint.
 // Sorting and filtering rules live here so every list agrees.
-import { type CollectionEntry, getCollection } from 'astro:content'
+import { type CollectionEntry, getCollection, getEntry } from 'astro:content'
 import type { ShellItem } from '../shell/content'
 import { itemHref } from '../shell/paths'
 import { readingMinutes } from './reading-time'
@@ -9,6 +9,8 @@ export type Thought = CollectionEntry<'thoughts'>
 export type ArchivePost = CollectionEntry<'archive'>
 export type Project = CollectionEntry<'projects'>
 export type Toy = CollectionEntry<'play'>
+export type About = CollectionEntry<'about'>
+export type Hello = CollectionEntry<'hello'>
 
 type Article = Thought | ArchivePost
 type Entry = Article | Project | Toy
@@ -35,6 +37,18 @@ export async function getProjects(): Promise<Project[]> {
 
 export async function getToys(): Promise<Toy[]> {
   return (await getCollection('play')).sort(byOrder)
+}
+
+/** The single about.md; the build fails loudly if it is missing. */
+export async function getAbout(): Promise<About> {
+  const about = await getEntry('about', 'about')
+  if (!about) throw new Error('content/about.md is missing')
+  return about
+}
+
+/** The single hello.md; the boot log prints nothing if it is missing. */
+export async function getHello(): Promise<Hello | undefined> {
+  return await getEntry('hello', 'hello')
 }
 
 export function minutes(entry: Article): number {

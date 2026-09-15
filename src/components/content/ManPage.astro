@@ -1,15 +1,9 @@
 ---
-// `man jasper`: the about page as a manual page.
-export interface AboutData {
-  name: string
-  tagline: string
-  synopsis: string
-  status: string
-  bugs: string
-  seeAlso: { label: string; href: string }[]
-}
+// `man jasper`: the about page as a manual page. The fields are the `about`
+// collection's schema in src/content.config.ts.
+import type { About } from '../../lib/content'
 
-type Props = AboutData
+type Props = About['data']
 
 const { name, tagline, synopsis, status, bugs, seeAlso } = Astro.props
 const header = `${name.toUpperCase()}(1)`
