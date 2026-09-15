@@ -21,7 +21,51 @@
   },
   "linter": {
     "enabled": true,
-    "rules": { "preset": "recommended" }
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        "useOptionalChain": "error"
+      },
+      "style": {
+        "noInferrableTypes": "error",
+        "noNegationElse": "error",
+        "noNestedTernary": "error",
+        "noParameterAssign": "error",
+        "noUselessElse": "error",
+        "useCollapsedElseIf": "error",
+        "useConst": "error",
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "filenameCases": ["kebab-case"],
+            "strictCase": true
+          }
+        },
+        "useForOf": "error",
+        "useNamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": false,
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "objectLiteralProperty"
+                },
+                "formats": ["camelCase", "PascalCase", "CONSTANT_CASE"]
+              }
+            ]
+          }
+        },
+        "useNumberNamespace": "error",
+        "useTemplate": "error"
+      },
+      "suspicious": {
+        "noConsole": "error",
+        "noConstEnum": "error",
+        "noDoubleEquals": "error",
+        "noExplicitAny": "error"
+      }
+    }
   },
   "formatter": {
     "enabled": true,

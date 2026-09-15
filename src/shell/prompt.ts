@@ -25,6 +25,18 @@ export interface Prompt {
   pushHistory(line: string): void
 }
 
+/** After the last character is typed, wait this many characters' worth before submitting. */
+const SUBMIT_PAUSE_CHARS = 3
+
+function hintFor(value: string, matches: string[]): string {
+  if (!value.trim()) return ''
+  if (matches.length > 0) return 'tab ⇥ completes'
+  return '↵ runs'
+}
+
+const completionChip = (match: string) =>
+  h('button', { type: 'button', role: 'option', 'data-fill': match }, match)
+
 export function createPrompt(
   els: PromptElements,
   on: PromptHandlers,
@@ -40,19 +52,11 @@ export function createPrompt(
     input.value = value
     matches = value.trim() ? on.complete(value).slice(0, COMPLETIONS_MAX) : []
     renderCompletions()
-    hint.textContent = !value.trim()
-      ? ''
-      : matches.length
-        ? 'tab ⇥ completes'
-        : '↵ runs'
+    hint.textContent = hintFor(value, matches)
   }
 
   function renderCompletions() {
-    completions.replaceChildren(
-      ...matches.map((m) =>
-        h('button', { type: 'button', role: 'option', 'data-fill': m }, m),
-      ),
-    )
+    completions.replaceChildren(...matches.map(completionChip))
     completions.hidden = matches.length === 0
   }
 
@@ -63,9 +67,9 @@ export function createPrompt(
   }
 
   function recall(step: -1 | 1) {
-    if (!history.length) return
-    if (historyIndex < 0) historyIndex = history.length
-    historyIndex = Math.max(0, Math.min(history.length, historyIndex + step))
+    if (history.length === 0) return
+    const from = historyIndex < 0 ? history.length : historyIndex
+    historyIndex = Math.max(0, Math.min(history.length, from + step))
     set(history[historyIndex] ?? '')
   }
 
@@ -75,46 +79,45 @@ export function createPrompt(
     if (line) on.submit(line)
   }
 
+  function completeFirst(e: KeyboardEvent) {
+    // a11y: only steal Tab when there is a partial word and something to
+    // complete; otherwise focus moves on as usual.
+    if (!input.value.trim() || matches.length === 0) return
+    e.preventDefault()
+    set(matches[0])
+  }
+
+  const keyHandlers: Record<string, (e: KeyboardEvent) => void> = {
+    Tab: completeFirst,
+    ArrowUp: (e) => {
+      e.preventDefault()
+      recall(-1)
+    },
+    ArrowDown: (e) => {
+      e.preventDefault()
+      recall(1)
+    },
+    c: (e) => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      set('')
+    },
+    l: (e) => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      on.clearScreen()
+    },
+  }
+
   form.addEventListener('submit', (e) => {
     e.preventDefault()
     submit()
   })
   input.addEventListener('input', () => set(input.value))
-  input.addEventListener('keydown', (e) => {
-    switch (e.key) {
-      case 'Tab':
-        // a11y: only steal Tab when there is a partial word and something to
-        // complete; otherwise focus moves on as usual.
-        if (input.value.trim() && matches.length) {
-          e.preventDefault()
-          set(matches[0])
-        }
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        recall(-1)
-        break
-      case 'ArrowDown':
-        e.preventDefault()
-        recall(1)
-        break
-      case 'c':
-        if (e.ctrlKey) {
-          e.preventDefault()
-          set('')
-        }
-        break
-      case 'l':
-        if (e.ctrlKey) {
-          e.preventDefault()
-          on.clearScreen()
-        }
-        break
-    }
-  })
+  input.addEventListener('keydown', (e) => keyHandlers[e.key]?.(e))
   completions.addEventListener('click', (e) => {
-    const fill = (e.target as HTMLElement).closest<HTMLElement>('[data-fill]')
-      ?.dataset.fill
+    if (!(e.target instanceof Element)) return
+    const fill = e.target.closest<HTMLElement>('[data-fill]')?.dataset.fill
     if (fill === undefined) return
     set(fill)
     input.focus()
@@ -129,16 +132,16 @@ export function createPrompt(
       return Promise.resolve()
     }
     return new Promise<void>((resolve) => {
-      let i = 0
+      let typed = 0
       typing = setInterval(() => {
-        i++
-        set(cmd.slice(0, i))
-        if (i < cmd.length) return
+        typed += 1
+        set(cmd.slice(0, typed))
+        if (typed < cmd.length) return
         clearInterval(typing)
         setTimeout(() => {
           submit()
           resolve()
-        }, msPerChar * 3)
+        }, msPerChar * SUBMIT_PAUSE_CHARS)
       }, msPerChar)
     })
   }

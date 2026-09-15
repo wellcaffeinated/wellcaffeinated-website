@@ -7,7 +7,25 @@ export interface ShellOptions<Ctx> {
   notFound?: (name: string, shell: Shell<Ctx>) => Output
 }
 
-const VISIBLE: Tier[] = ['shown', 'hinted']
+const ALL_TIERS: Tier[] = ['shown', 'hinted', 'hidden']
+const VISIBLE_TIERS: Tier[] = ['shown', 'hinted']
+
+const DOT_SLASH = './'
+
+/** "./play/foo" reads as `play foo`; "./play" as `play`. */
+function normalize(tokens: string[]): [string, string[]] {
+  const [first, ...rest] = tokens
+  if (!first.startsWith(DOT_SLASH)) return [first, rest]
+  const [name = first, ...subpath] = first
+    .slice(DOT_SLASH.length)
+    .split('/')
+    .filter(Boolean)
+  if (subpath.length === 0) return [name, rest]
+  return [name, [subpath.join('/'), ...rest]]
+}
+
+const errorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error)
 
 /**
  * A command registry plus a dispatcher. Knows nothing about the UI or the
@@ -22,7 +40,9 @@ export function createShell<Ctx>(
 
   function register(def: Command<Ctx>) {
     commands.set(def.name, def)
-    for (const a of def.aliases ?? []) aliases.set(a, def.name)
+    for (const alias of def.aliases ?? []) {
+      aliases.set(alias, def.name)
+    }
     return def
   }
 
@@ -30,19 +50,13 @@ export function createShell<Ctx>(
     return commands.get(name) ?? commands.get(aliases.get(name) ?? '')
   }
 
-  function list(tiers: Tier | Tier[] = ['shown', 'hinted', 'hidden']) {
+  function list(tiers: Tier | Tier[] = ALL_TIERS) {
     const wanted = new Set(Array.isArray(tiers) ? tiers : [tiers])
-    return [...commands.values()].filter((c) => wanted.has(c.tier))
+    return [...commands.values()].filter((command) => wanted.has(command.tier))
   }
 
-  // "./play/foo" reads as `play foo`; "./play" as `play`.
-  function normalize(tokens: string[]): [string, string[]] {
-    const [first, ...rest] = tokens
-    if (!first.startsWith('./')) return [first, rest]
-    const parts = first.slice(2).split('/').filter(Boolean)
-    const name = parts[0] ?? first
-    if (parts.length > 1) rest.unshift(parts.slice(1).join('/'))
-    return [name, rest]
+  function visibleNames() {
+    return list(VISIBLE_TIERS).map((command) => command.name)
   }
 
   function api(line: string, args: string[]): CommandApi<Ctx> {
@@ -51,10 +65,7 @@ export function createShell<Ctx>(
 
   function notFound(name: string): Output {
     if (options.notFound) return options.notFound(name, shell)
-    const guess = didYouMean(
-      name,
-      list(VISIBLE).map((c) => c.name),
-    )
+    const guess = didYouMean(name, visibleNames())
     return {
       type: 'error',
       message: `command not found: ${name}`,
@@ -65,29 +76,29 @@ export function createShell<Ctx>(
 
   async function run(line: string): Promise<Output | null> {
     const tokens = tokenize(line)
-    if (!tokens.length) return null
+    if (tokens.length === 0) return null
     const [name, args] = normalize(tokens)
     const def = resolve(name)
     if (!def) return notFound(name)
     try {
       return await def.run(args, api(line, args))
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
-      return { type: 'error', message: `${name}: ${message}` }
+    } catch (error) {
+      return { type: 'error', message: `${name}: ${errorMessage(error)}` }
     }
+  }
+
+  function completeName(partial: string): string[] {
+    return visibleNames()
+      .filter((name) => name.startsWith(partial) && name !== partial)
+      .map((name) => `${name} `)
   }
 
   // Hidden commands never complete; discovery is the point.
   function complete(partial: string): string[] {
     const tokens = tokenize(partial)
+    if (tokens.length === 0) return []
     const trailingSpace = /\s$/.test(partial)
-    if (!tokens.length) return []
-    if (tokens.length === 1 && !trailingSpace) {
-      return list(VISIBLE)
-        .map((c) => c.name)
-        .filter((n) => n.startsWith(tokens[0]) && n !== tokens[0])
-        .map((n) => `${n} `)
-    }
+    if (tokens.length === 1 && !trailingSpace) return completeName(tokens[0])
     const [name, args] = normalize(tokens)
     const def = resolve(name)
     if (!def?.complete) return []
@@ -95,8 +106,8 @@ export function createShell<Ctx>(
     const head = trailingSpace ? tokens : tokens.slice(0, -1)
     return def
       .complete(arg, api(partial, args))
-      .filter((c) => c !== arg)
-      .map((c) => [...head, c].join(' '))
+      .filter((completion) => completion !== arg)
+      .map((completion) => [...head, completion].join(' '))
   }
 
   const shell: Shell<Ctx> = { register, resolve, run, complete, list }

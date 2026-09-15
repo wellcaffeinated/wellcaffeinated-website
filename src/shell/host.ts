@@ -13,7 +13,7 @@ import {
 import { loadIndex } from './content'
 import type { SiteCtx } from './context'
 import { createMenu } from './menu'
-import { createPrompt, type Prompt } from './prompt'
+import { createPrompt, type Prompt, type PromptElements } from './prompt'
 import { type RenderOptions, renderEntry } from './render'
 import {
   commandFromHash,
@@ -26,7 +26,71 @@ import {
 import { clearSession, type Entry, loadSession, saveSession } from './session'
 import { setTheme, toggleTheme } from './theme'
 
+/** How long the `rm -rf /` overlay stays up before the restart. */
 const BREAK_MS = 3200
+
+/** Opening one of these earns a ✓ read; anything else is ✓ visited. */
+const READ_PREFIXES = ['/thoughts/', '/archive/']
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
+
+const CLICKABLE = 'a[href], button, [data-cmd]'
+
+const doneNoteFor = (href: string) =>
+  READ_PREFIXES.some((prefix) => href.startsWith(prefix)) ? 'read' : 'visited'
+
+/** Coming back from a page marks the entry that opened it. */
+function settleOpened(entry: Entry): Entry {
+  if (!entry.opens || entry.done) return entry
+  return { ...entry, done: true, doneNote: doneNoteFor(entry.opens) }
+}
+
+const isUnknownCommand = (out: Output) => out.type === 'error' && !out.code
+
+/** Server-rendered snippets (hello.md), captured before the log is touched. */
+function readFragments(): Map<string, string> {
+  const els = document.querySelectorAll<HTMLElement>('[data-fragment]')
+  return new Map(
+    [...els].map((el) => [el.dataset.fragment ?? '', el.innerHTML]),
+  )
+}
+
+function isEditing(target: EventTarget | null): boolean {
+  if (target instanceof HTMLInputElement) return true
+  if (target instanceof HTMLTextAreaElement) return true
+  return target instanceof HTMLElement && target.isContentEditable
+}
+
+/** A single printable character with no modifier: what a prompt would want. */
+const isPlainCharacter = (e: KeyboardEvent) =>
+  e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey
+
+/** The clickable ancestor of a plain left click, or null to let the browser handle it. */
+function clickTarget(e: MouseEvent): HTMLElement | null {
+  if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return null
+  if (!(e.target instanceof Element)) return null
+  return e.target.closest<HTMLElement>(CLICKABLE)
+}
+
+function promptElements(
+  root: HTMLElement,
+  form: HTMLFormElement,
+): PromptElements | null {
+  const input = form.querySelector('input')
+  const hint = form.querySelector<HTMLElement>('[data-prompt-hint]')
+  const completions = root.querySelector<HTMLElement>('[data-completions]')
+  if (!input || !hint || !completions) return null
+  return { form, input, hint, completions }
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() =>
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
+    }),
+  )
+}
 
 async function main() {
   const root = document.querySelector<HTMLElement>('[data-shell]')
@@ -39,15 +103,10 @@ async function main() {
   const menuEl = document.querySelector<HTMLDialogElement>('[data-menu]')
   const menu = menuEl ? createMenu(menuEl) : null
   const brokenEl = document.querySelector<HTMLElement>('[data-broken]')
-
-  // Server-rendered snippets (hello.md) are captured before the log is touched.
-  const fragments = new Map<string, string>()
-  for (const el of document.querySelectorAll<HTMLElement>('[data-fragment]')) {
-    fragments.set(el.dataset.fragment ?? '', el.innerHTML)
-  }
+  const fragments = readFragments()
 
   let entries: Entry[] = []
-  let nextId = 1
+  let lastId = 0
   let unknownStreak = 0
   let prompt: Prompt | null = null
 
@@ -65,53 +124,40 @@ async function main() {
 
   // ── log ──────────────────────────────────────────────────────────────────
 
+  function newId() {
+    lastId += 1
+    return lastId
+  }
+
   function persist() {
     saveSession({ entries, history: prompt?.history ?? [] })
     menu?.setVisited(entries, render.hrefFor)
   }
 
   function append(entry: Entry) {
-    entries.push(entry)
+    entries = [...entries, entry]
     if (!logEl) return
     logEl.append(renderEntry(entry, PROMPT_USER, render))
-    requestAnimationFrame(() =>
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
-      }),
-    )
+    scrollToBottom()
   }
 
   function redraw() {
     if (!logEl) return
     logEl.replaceChildren(
-      ...entries.map((e) => renderEntry(e, PROMPT_USER, render)),
+      ...entries.map((entry) => renderEntry(entry, PROMPT_USER, render)),
     )
   }
 
   function bootEntries(): Entry[] {
     const hello = fragments.get('hello')
     return [
-      { id: nextId++, cmd: '', out: { type: 'text', lines: [...BOOT_LINES] } },
+      { id: newId(), cmd: '', out: { type: 'text', lines: [...BOOT_LINES] } },
       {
-        id: nextId++,
+        id: newId(),
         cmd: 'cat hello.md',
         out: hello ? { type: 'html', html: hello } : null,
       },
     ]
-  }
-
-  // Coming back from a page marks the entry that opened it.
-  function settleOpened() {
-    for (const e of entries) {
-      if (e.opens && !e.done) {
-        e.done = true
-        e.doneNote =
-          e.opens.startsWith('/thoughts/') || e.opens.startsWith('/archive/')
-            ? 'read'
-            : 'visited'
-      }
-    }
   }
 
   // ── running ──────────────────────────────────────────────────────────────
@@ -121,17 +167,20 @@ async function main() {
     replay?: boolean
   }
 
-  async function run(line: string, opts: RunOptions = {}) {
-    line = line.trim()
+  // On a content page there is no log: go straight to the target, or back
+  // to the shell with the command in the hash so it runs (and logs) there.
+  function leaveFor(line: string, out: Output | null) {
+    if (out === null) return
+    location.href =
+      out.type === 'navigate' ? out.href : SHELL_PATH + hashFor(line)
+  }
+
+  async function run(rawLine: string, opts: RunOptions = {}) {
+    const line = rawLine.trim()
     if (!line) return
     const out = await shell.run(line)
-    // On a content page there is no log: go straight to the target, or back
-    // to the shell with the command in the hash so it runs (and logs) there.
     if (!onShellPage()) {
-      if (out !== null) {
-        location.href =
-          out.type === 'navigate' ? out.href : SHELL_PATH + hashFor(line)
-      }
+      leaveFor(line, out)
       return
     }
     prompt?.pushHistory(line)
@@ -139,30 +188,28 @@ async function main() {
       persist()
       return
     }
-    const entry: Entry = { id: nextId++, cmd: line, out }
-    if (out.type === 'navigate') entry.opens = out.href
-    append(entry)
+    const opens = out.type === 'navigate' ? out.href : undefined
+    append({ id: newId(), cmd: line, out, opens })
     trackUnknown(out)
-    if (!opts.replay && out.type !== 'navigate')
+    if (!opts.replay && !opens) {
       history.pushState(null, '', SHELL_PATH + hashFor(line))
+    }
     persist()
-    if (out.type === 'navigate') location.href = out.href
+    if (opens) location.href = opens
   }
 
   // Never a bare error: a few unknowns in a row and the menu offers a way out.
   function trackUnknown(out: Output) {
-    const unknown = out.type === 'error' && !out.code
-    unknownStreak = unknown ? unknownStreak + 1 : 0
-    if (unknownStreak >= UNKNOWN_STREAK_LIMIT) {
-      unknownStreak = 0
-      menu?.open()
-    }
+    unknownStreak = isUnknownCommand(out) ? unknownStreak + 1 : 0
+    if (unknownStreak < UNKNOWN_STREAK_LIMIT) return
+    unknownStreak = 0
+    menu?.open()
   }
 
   function typeAndRun(cmd: string) {
     menu?.close()
     if (!prompt || !onShellPage()) return run(cmd)
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const reduced = matchMedia(REDUCED_MOTION_QUERY).matches
     return prompt.type(cmd, reduced ? 0 : TYPING_MS)
   }
 
@@ -194,119 +241,116 @@ async function main() {
   // ── wiring ───────────────────────────────────────────────────────────────
 
   const promptForm = root.querySelector<HTMLFormElement>('[data-prompt]')
-  if (promptForm) {
-    prompt = createPrompt(
-      {
-        form: promptForm,
-        input: promptForm.querySelector('input') as HTMLInputElement,
-        hint: promptForm.querySelector('[data-prompt-hint]') as HTMLElement,
-        completions: root.querySelector('[data-completions]') as HTMLElement,
-      },
-      {
-        complete: (p) => shell.complete(p),
-        submit: (line) => run(line),
-        clearScreen: restart,
-      },
-    )
+  const promptEls = promptForm && promptElements(root, promptForm)
+  if (promptEls) {
+    prompt = createPrompt(promptEls, {
+      complete: shell.complete,
+      submit: run,
+      clearScreen: restart,
+    })
   }
 
-  document.addEventListener('click', (e) => {
-    const target = (e.target as HTMLElement).closest<HTMLElement>(
-      'a[href], button, [data-cmd]',
-    )
-    if (!target || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey)
+  function fillPrompt(value: string) {
+    if (!prompt) {
+      location.href = render.hrefFor(value.trim())
       return
+    }
+    prompt.set(value)
+    prompt.focus()
+  }
 
+  /** Buttons and links identified by a `data-*` attribute rather than a command. */
+  const datasetActions: Record<string, (e: MouseEvent) => void> = {
+    menuToggle: () => menu?.toggle(),
+    menuClose: () => menu?.close(),
+    themeToggle: toggleTheme,
+    restart: (e) => {
+      e.preventDefault()
+      restart()
+    },
+  }
+
+  function onClick(e: MouseEvent) {
+    const target = clickTarget(e)
+    if (!target) return
     const href = target.getAttribute('href') ?? ''
     const cmd = commandFromHref(href) ?? target.dataset.cmd
     if (cmd !== undefined) {
       e.preventDefault()
       menu?.close()
-      if ('type' in target.dataset) typeAndRun(cmd)
-      else run(cmd)
-      return
-    }
-    if (target.dataset.fill !== undefined) {
-      e.preventDefault()
-      menu?.close()
-      if (prompt) {
-        prompt.set(target.dataset.fill)
-        prompt.focus()
+      if ('type' in target.dataset) {
+        typeAndRun(cmd)
       } else {
-        location.href = render.hrefFor(target.dataset.fill.trim())
+        run(cmd)
       }
       return
     }
-    if ('menuToggle' in target.dataset) menu?.toggle()
-    else if ('menuClose' in target.dataset) menu?.close()
-    else if ('themeToggle' in target.dataset) toggleTheme()
-    else if ('restart' in target.dataset) {
+    const fill = target.dataset.fill
+    if (fill !== undefined) {
       e.preventDefault()
-      restart()
+      menu?.close()
+      fillPrompt(fill)
+      return
     }
-  })
+    const action = Object.keys(datasetActions).find(
+      (key) => key in target.dataset,
+    )
+    if (action) datasetActions[action](e)
+  }
 
-  document.addEventListener('keydown', (e) => {
+  function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && !onShellPage() && !menuEl?.open) {
       location.href = SHELL_PATH
       return
     }
     // Typing anywhere focuses the prompt. Never touches Tab or shortcuts.
-    const tag = (e.target as HTMLElement).tagName
-    const editing =
-      tag === 'INPUT' ||
-      tag === 'TEXTAREA' ||
-      (e.target as HTMLElement).isContentEditable
-    if (
-      prompt &&
-      !editing &&
-      !menuEl?.open &&
-      e.key.length === 1 &&
-      !e.metaKey &&
-      !e.ctrlKey &&
-      !e.altKey
-    ) {
-      prompt.focus()
-    }
-  })
+    if (!prompt || menuEl?.open || isEditing(e.target)) return
+    if (isPlainCharacter(e)) prompt.focus()
+  }
 
-  window.addEventListener('popstate', () => {
+  function onPopstate() {
     if (!onShellPage()) return
     const cmd = commandFromHash(location.hash)
     if (cmd && cmd !== entries.at(-1)?.cmd) run(cmd, { replay: true })
-  })
+  }
 
   // Back/forward cache restores the old DOM; the opened entry still needs its ✓.
-  window.addEventListener('pageshow', (e) => {
+  function onPageshow(e: PageTransitionEvent) {
     if (!e.persisted) return
-    settleOpened()
+    entries = entries.map(settleOpened)
     redraw()
     persist()
-  })
+  }
+
+  document.addEventListener('click', onClick)
+  document.addEventListener('keydown', onKeydown)
+  window.addEventListener('popstate', onPopstate)
+  window.addEventListener('pageshow', onPageshow)
 
   // ── boot ─────────────────────────────────────────────────────────────────
 
   const session = loadSession()
-  if (logEl) {
-    if (session) {
-      entries = session.entries
-      nextId = Math.max(0, ...entries.map((e) => e.id)) + 1
-      settleOpened()
-      redraw()
-    } else {
-      // Keep the server-rendered boot + hello as-is; just adopt them as entries.
-      entries = bootEntries()
-    }
-    prompt?.history.push(...(session?.history ?? []))
-    persist()
+  if (!logEl) {
+    if (session) menu?.setVisited(session.entries, render.hrefFor)
+    return
+  }
+  if (session) {
+    entries = session.entries.map(settleOpened)
+    lastId = Math.max(0, ...entries.map((entry) => entry.id))
+    redraw()
+  } else {
+    // Keep the server-rendered boot + hello as-is; just adopt them as entries.
+    entries = bootEntries()
+  }
+  prompt?.history.push(...(session?.history ?? []))
+  persist()
 
-    const fromUrl = commandFromHash(location.hash)
-    if (fromUrl && fromUrl !== entries.at(-1)?.cmd)
-      await run(fromUrl, { replay: true })
-    if (root.dataset.notFound !== undefined)
-      await run(`open ${location.pathname}`, { replay: true })
-  } else if (session) {
-    menu?.setVisited(session.entries, render.hrefFor)
+  const fromUrl = commandFromHash(location.hash)
+  if (fromUrl && fromUrl !== entries.at(-1)?.cmd) {
+    await run(fromUrl, { replay: true })
+  }
+  if (root.dataset.notFound !== undefined) {
+    await run(`open ${location.pathname}`, { replay: true })
   }
 }
 

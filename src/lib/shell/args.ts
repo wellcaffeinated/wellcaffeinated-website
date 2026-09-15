@@ -1,22 +1,31 @@
 import type { Flags } from './types'
 
+const TOKEN_PATTERN = /"([^"]*)"|'([^']*)'|(\S+)/g
+const LONG_FLAG_PREFIX = '--'
+const SHORT_FLAGS_PATTERN = /^-[a-z]+$/i
+
 /** Splits a line on whitespace, keeping quoted strings together. */
 export function tokenize(line: string): string[] {
-  const out: string[] = []
-  const re = /"([^"]*)"|'([^']*)'|(\S+)/g
-  for (const m of line.matchAll(re)) out.push(m[1] ?? m[2] ?? m[3])
-  return out
+  return [...line.matchAll(TOKEN_PATTERN)].map(
+    ([, doubleQuoted, singleQuoted, bare]) =>
+      doubleQuoted ?? singleQuoted ?? bare,
+  )
+}
+
+/** `--all` → ["all"]; `-la` → ["l", "a"]; anything else → []. */
+function flagNames(arg: string): string[] {
+  if (arg.startsWith(LONG_FLAG_PREFIX))
+    return [arg.slice(LONG_FLAG_PREFIX.length)]
+  if (SHORT_FLAGS_PATTERN.test(arg)) return [...arg.slice(1)]
+  return []
 }
 
 export function parseFlags(args: string[]): Flags {
-  const flags: Flags = {}
-  for (const a of args) {
-    if (a.startsWith('--')) flags[a.slice(2)] = true
-    else if (/^-[a-z]+$/i.test(a)) for (const ch of a.slice(1)) flags[ch] = true
-  }
-  return flags
+  return Object.fromEntries(
+    args.flatMap(flagNames).map((name) => [name, true] as const),
+  )
 }
 
 export function positional(args: string[]): string[] {
-  return args.filter((a) => !a.startsWith('-'))
+  return args.filter((arg) => !arg.startsWith('-'))
 }

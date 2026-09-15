@@ -50,11 +50,12 @@ error recovery; two exits (☰ and ↺) in every mode.
 - `src/lib/shell/` — **the REPL library.** Command registry, tokenizer, tab
   completion, "did you mean", and the output-descriptor types. No DOM, no
   Astro, no site knowledge; meant to be liftable into its own package.
-- `src/shell/` — **this site's shell.** `commands/` (one object per command,
-  grouped by file), `render.ts` (descriptor → DOM), `host.ts` (wires the page:
-  prompt, log, menu, routing, session), `content.ts` (the browser's content
-  index), `router.ts` (command ⇄ URL), `theme.ts`, `config.ts` (chips, prompt
-  user, boot lines, storage keys).
+- `src/shell/` — **this site's shell.** `commands/` (one file per command;
+  `one-liners.ts` holds the fixed-reply gags, `util.ts` the shared helpers,
+  `index.ts` the registration list), `render.ts` (descriptor → DOM),
+  `host.ts` (wires the page: prompt, log, menu, routing, session),
+  `content.ts` (the browser's content index), `router.ts` (command ⇄ URL),
+  `theme.ts`, `config.ts` (chips, prompt user, boot lines, storage keys).
 - `src/lib/content.ts` — server-side content helpers: sorted collections,
   reading time, and `toShellItem` (collection entry → index item).
 - `src/thoughts/`, `src/archive/`, `src/projects/`, `src/play/` — content
@@ -77,8 +78,9 @@ error recovery; two exits (☰ and ↺) in every mode.
 
 - **Descriptors are the contract.** Commands return plain objects
   (`text`, `cards`, `rows`, `help`, `error`, `search`, `html`, `navigate`); see
-  `src/lib/shell/types.ts`. `render.ts` has one branch per type. Adding an
-  output shape = one type + one branch. Commands never touch the DOM.
+  `src/lib/shell/types.ts`. `render.ts` has one renderer per type in its
+  `RENDERERS` table. Adding an output shape = one type + one renderer.
+  Commands never touch the DOM.
 - **Side effects go through `ctx`** (`src/shell/context.ts`): theme, restart,
   menu, history, break, fragments. Add to it deliberately.
 - **Tiers:** `shown` (chips) · `hinted` (listed in `help`) · `hidden` (never
@@ -104,6 +106,26 @@ error recovery; two exits (☰ and ↺) in every mode.
   extension / kept consistent by hand (2-space, single quotes, no semicolons).
 - Type-check `.astro` and content with `pnpm check` (`astro check`), not `tsc`.
 - Comments explain *why*, not what. Prefer a new command object to new UI.
+
+## Code style
+
+The full conventions are the "Coding Preferences" note in Jasper's notebook
+(`03 Resources/Coding/Coding Preferences.md`); read it before writing code.
+Biome enforces what a linter can (`===`, template literals, `for…of`, no
+nested ternaries, no parameter reassignment, early returns over `else`,
+naming, kebab-case filenames, no `console`). The rest is by hand:
+
+- One file per command in `src/shell/commands/` unless that is genuinely
+  awkward (`one-liners.ts` is the exception: fixed replies, no logic).
+- Dispatch tables over `switch` / `if` chains when branching on a key.
+- `+= 1`, never `++`. Braces on any `if` the formatter breaks across lines.
+- Immutable by default: spread, `map` / `filter` / `flatMap`; no `push` into
+  shared arrays. Pass named callbacks point-free.
+- Module-level constants in `UPPER_SNAKE_CASE`, showing their derivation;
+  locals stay `camelCase`. Name things so comments become unnecessary.
+- Factories over classes; dependencies passed in, not imported at module scope.
+- `satisfies` over `as`; `unknown` over `any`; let obvious types infer.
+- An options object once a function needs more than 3–4 positional arguments.
 
 ## Deployment
 

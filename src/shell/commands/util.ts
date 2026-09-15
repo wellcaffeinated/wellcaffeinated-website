@@ -7,9 +7,12 @@ import { searchWords } from '../search'
 
 export type SiteCommand = Command<SiteCtx>
 
+const toTextLine = (line: string | TextLine): TextLine =>
+  typeof line === 'string' ? { text: line } : line
+
 export const text = (...lines: (string | TextLine)[]): Output => ({
   type: 'text',
-  lines: lines.map((l) => (typeof l === 'string' ? { text: l } : l)),
+  lines: lines.map(toTextLine),
 })
 
 export const muted = (text: string, cmd?: string): TextLine => ({
@@ -18,9 +21,9 @@ export const muted = (text: string, cmd?: string): TextLine => ({
   cmd,
 })
 
-export const SECTION_SUGGESTIONS: Suggestion[] = CHIPS.map((c) => ({
-  label: c.label,
-  cmd: c.cmd,
+export const SECTION_SUGGESTIONS: Suggestion[] = CHIPS.map((chip) => ({
+  label: chip.label,
+  cmd: chip.cmd,
 }))
 
 export { openCmd }
@@ -36,9 +39,9 @@ export function notFound(index: ShellIndex, path: string): Output {
       ? 'searched everything for those words…'
       : 'nothing matched. from the top:',
     suggestions: [
-      ...hits.map((h) => ({
-        label: h.item.title,
-        cmd: openCmd(h.item),
+      ...hits.map((hit) => ({
+        label: hit.item.title,
+        cmd: openCmd(hit.item),
         primary: true,
       })),
       ...SECTION_SUGGESTIONS,
