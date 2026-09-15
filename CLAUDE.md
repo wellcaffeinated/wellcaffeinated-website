@@ -64,15 +64,17 @@ error recovery; two exits (☰ and ↺) in every mode.
   is the code); `about.md` and `hello.md` are single-file collections.
   Schemas in `src/content.config.ts`, which is the only place `src/` names
   a content path.
-- `src/lib/toy.ts` — the toy contract (`mount({ el, constants })`) and
-  `loadToy(slug)`, which finds `content/play/<slug>/toy.ts` through
-  `import.meta.glob`.
+- `src/lib/toy.ts` — everything a toy folder may implement: the mount contract
+  (`mount({ el, constants, onResize })`), `ToyLayoutProps` for a toy's own
+  `layout.astro`, and `loadToy(slug)`, which finds `content/play/<slug>/toy.ts`
+  through `import.meta.glob`.
 - `src/components/shell/` — the chrome: `TopBar`, `Dock` (chips + prompt),
   `Log`, `Menu`, `TakeoverBar`, `ThemeScript`, `BrokenOverlay`.
 - `src/components/content/` — content views: `ArticleView`, `ProjectView`,
   `ToyFrame`, `ManPage`, and `CardGrid` / `RowList` / `Listing` (static twins of
   the log renderers for section pages). `toy-layouts/` holds one component per
-  toy layout plus the two pieces they share, `ToyMount` and `ConstantsPanel`.
+  built-in toy layout plus the two pieces they share, `ToyMount` and
+  `ConstantsPanel`.
 - `src/layouts/ShellLayout.astro` — every page. `mode="shell"` (log + prompt) or
   `mode="takeover"` (content + bars).
 - `src/pages/` — `/` (the shell), `/404`, `/about`, `/{thoughts,archive,
@@ -115,6 +117,22 @@ the layout from a `LAYOUTS` table; a new layout is one component plus one key.
 stage positions absolutely, so only it reads corners; the layouts that flow
 read only `none`), and `aspect` sets the figure's shape where a layout gives
 the toy a box of its own.
+
+**A toy that wants its own arrangement** adds a `layout.astro` beside its
+`index.md`. `ToyFrame` finds it by glob, exactly as `loadToy` finds `toy.ts`,
+so `src/` still names no particular toy; if the file is there it is used, and
+the `layout` field is ignored. It is handed `ToyLayoutProps` (from `@lib/toy`,
+the one module holding everything a toy folder may implement), and owes two
+things back: `data-toy-mount` on the element the toy should paint into, and a
+`<slot />` for the writeup. The components in `src/components/content/
+toy-layouts/` are the worked examples. Since `layout.astro` and `toy.ts` sit
+in the same folder and nothing outside it reads either, they can share a
+private `data-*` vocabulary — the layout writes the skeleton, the toy drives
+it — which a shared layout could never offer.
+
+Unlike `toy.ts`, which is lazy and can only break its own page, a
+`layout.astro` is compiled with the site: a mistake in one fails `pnpm build`.
+`pnpm check` type-checks it, so errors surface before the build does.
 
 **Toys that need libraries** add a `package.json` in their folder listing
 just those libraries; `pnpm-workspace.yaml` makes every `content/play/*`

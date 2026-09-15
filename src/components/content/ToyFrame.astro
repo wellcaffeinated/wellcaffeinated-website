@@ -3,12 +3,12 @@
 // constants, its colours and the mounting — and hands the arranging to a
 // layout. The script below mounts content/play/<slug>/toy.ts if there is one;
 // until then the layout's hole is a labelled slot.
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js'
 import type { Toy } from '../../lib/content'
-import type { ToyConstants } from '../../lib/toy'
+import type { Places, ToyConstants } from '../../lib/toy'
 import ArticleLayout from './toy-layouts/ArticleLayout.astro'
 import ScrollLayout from './toy-layouts/ScrollLayout.astro'
 import StageLayout from './toy-layouts/StageLayout.astro'
-import type { Places } from './toy-layouts/types'
 
 interface Props {
   toy: Toy
@@ -20,6 +20,17 @@ const LAYOUTS = {
   article: ArticleLayout,
   scroll: ScrollLayout,
 } as const
+
+// A toy may bring its own layout instead of choosing one. Found the way
+// loadToy finds toy.ts — by glob, so src still names no particular toy — and
+// it wins over the `layout` field, the same "if the file is there, it is
+// used" rule. It is handed exactly what a built-in layout is handed, so the
+// components in toy-layouts/ are the worked examples of the contract.
+const OWN_LAYOUTS = import.meta.glob<{ default: AstroComponentFactory }>(
+  '/content/play/*/layout.astro',
+)
+
+const ownLayoutPath = (slug: string) => `/content/play/${slug}/layout.astro`
 
 // Corners the stage understands; the layouts that flow read only `none`.
 const DEFAULT_PLACES = {
@@ -33,7 +44,10 @@ const constantsByName: ToyConstants = Object.fromEntries(
   constants.map((constant) => [constant.name, constant.value]),
 )
 
-const Layout = LAYOUTS[layout]
+const loadOwnLayout = OWN_LAYOUTS[ownLayoutPath(toy.id)]
+const Layout = loadOwnLayout
+  ? (await loadOwnLayout()).default
+  : LAYOUTS[layout]
 ---
 
 <main

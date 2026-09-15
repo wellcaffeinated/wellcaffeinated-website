@@ -3,7 +3,31 @@
 // `mount`. Toys may import from src/lib via `@lib/*`; nothing in src ever
 // imports a specific toy.
 
+import type { Toy } from './content'
+
 export type ToyConstants = Record<string, number>
+
+/** Where a layout puts a block of chrome. */
+export type Place =
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-right'
+  | 'none'
+
+export type Places = { notes?: Place; constants?: Place }
+
+/**
+ * What every toy layout is handed, built-in or a toy's own layout.astro. A
+ * layout arranges these; it never mounts the toy or knows its slug — ToyFrame
+ * owns that. Put `data-toy-mount` on the element the toy should paint into,
+ * and render the writeup with a `<slot />`.
+ */
+export interface ToyLayoutProps {
+  toy: Toy
+  /** The layout's own defaults, already merged with the toy's `places`. */
+  places: Required<Places>
+}
 
 export interface ToySize {
   width: number
