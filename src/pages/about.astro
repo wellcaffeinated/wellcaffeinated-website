@@ -1,0 +1,18 @@
+---
+import { Content, frontmatter } from '../about.md'
+import ManPage, { type AboutData } from '../components/content/ManPage.astro'
+import ShellLayout from '../layouts/ShellLayout.astro'
+
+const about = frontmatter as AboutData
+---
+
+<ShellLayout
+  title="man jasper — wellcaffeinated"
+  description={about.tagline}
+  cmd="man jasper"
+  next={[{ label: 'ls projects', cmd: 'ls projects' }]}
+>
+  <ManPage {...about}>
+    <Content />
+  </ManPage>
+</ShellLayout>

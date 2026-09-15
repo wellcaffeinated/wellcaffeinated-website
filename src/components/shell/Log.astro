@@ -1,0 +1,24 @@
+---
+// The scrolling history. Server-renders the first two entries (boot and
+// `cat hello.md`) so the page reads without JavaScript; the host adopts them
+// as entries, or replaces them when a session is being restored.
+import { Content as Hello } from '../../hello.md'
+import { BOOT_LINES, PROMPT_USER } from '../../shell/config'
+---
+
+<main class="log" data-log>
+  <div class="entry">
+    <div class="out-text">
+      {BOOT_LINES.map((l) => <div data-tone={l.tone}>{l.text}</div>)}
+    </div>
+  </div>
+  <div class="entry">
+    <div class="entry-cmd">
+      <span class="prompt-user">{PROMPT_USER} $</span>
+      <span>cat hello.md</span>
+    </div>
+    <div class="out-html prose" data-fragment="hello">
+      <Hello />
+    </div>
+  </div>
+</main>

@@ -1,0 +1,31 @@
+---
+// Static twin of the `rows` renderer branch in src/shell/render.ts.
+import type { Row } from '../../lib/shell'
+import { hrefFor } from '../../shell/router'
+
+interface Props {
+  items: Row[]
+}
+
+const { items } = Astro.props
+---
+
+<div class="out-rows">
+  {
+    items.map((r) => (
+      <>
+        <span class="row-k">{r.k}</span>
+        {r.cmd ? (
+          <a class="row-title" href={hrefFor(r.cmd)} data-cmd={r.cmd} data-tone={r.tone}>
+            {r.title}
+          </a>
+        ) : (
+          <span class="row-title" data-tone={r.tone}>
+            {r.title}
+          </span>
+        )}
+        <span class="row-meta">{r.meta}</span>
+      </>
+    ))
+  }
+</div>

@@ -1,0 +1,23 @@
+---
+import CardGrid from '../../components/content/CardGrid.astro'
+import Listing from '../../components/content/Listing.astro'
+import ShellLayout from '../../layouts/ShellLayout.astro'
+import { getProjects, toShellItem } from '../../lib/content'
+import { projectCards } from '../../shell/listings'
+
+const cards = projectCards((await getProjects()).map(toShellItem))
+---
+
+<ShellLayout
+  title="projects — wellcaffeinated"
+  description="Things I've made."
+  cmd="ls projects"
+  next={[
+    { label: 'ls thoughts', cmd: 'ls thoughts' },
+    { label: 'ls play', cmd: 'ls play' },
+  ]}
+>
+  <Listing cmd="ls projects">
+    <CardGrid items={cards} />
+  </Listing>
+</ShellLayout>

@@ -1,0 +1,10 @@
+---
+// A 404 is a failed command. The shell boots as usual, then runs
+// `open <path>`, which prints the error with fuzzy suggestions.
+import Log from '../components/shell/Log.astro'
+import ShellLayout from '../layouts/ShellLayout.astro'
+---
+
+<ShellLayout title="404 — wellcaffeinated" mode="shell" notFound>
+  <Log />
+</ShellLayout>

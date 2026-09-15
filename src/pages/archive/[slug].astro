@@ -1,0 +1,37 @@
+---
+import type { GetStaticPaths } from 'astro'
+import { render } from 'astro:content'
+import ArticleView from '../../components/content/ArticleView.astro'
+import ShellLayout from '../../layouts/ShellLayout.astro'
+import { getArchive, minutes, neighbours } from '../../lib/content'
+import { openCmd } from '../../shell/listings'
+
+export const getStaticPaths = (async () => {
+  const posts = await getArchive()
+  return posts.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry, ...neighbours(posts, entry.id) },
+  }))
+}) satisfies GetStaticPaths
+
+const { entry, prev, next } = Astro.props
+const { Content } = await render(entry)
+const cmd = openCmd({ section: 'archive', slug: entry.id })
+const suggestions = [
+  prev && { label: '← prev', cmd: openCmd({ section: 'archive', slug: prev.id }) },
+  next && { label: 'next →', cmd: openCmd({ section: 'archive', slug: next.id }) },
+  { label: 'ls thoughts/archive', cmd: 'ls thoughts/archive' },
+].filter((s) => !!s)
+---
+
+<ShellLayout title={entry.data.title} description={entry.data.description} cmd={cmd} next={suggestions}>
+  <ArticleView
+    title={entry.data.title}
+    section="archive"
+    date={entry.data.pubDate}
+    minutes={minutes(entry)}
+    tags={entry.data.tags}
+  >
+    <Content />
+  </ArticleView>
+</ShellLayout>

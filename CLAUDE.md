@@ -21,6 +21,21 @@ will be archived once this site is live.
 When you need old content, clone or read that repo directly rather than looking
 for it here.
 
+### The design
+
+The site is a **shell**: a terminal-shaped frame whose output is rich UI.
+Commands are chips for people who don't type; typing is opt-in. The design
+record (principles, vocabulary, backlog of un-built ideas) is
+`docs/planning/ideas.md`; read it before changing the interaction. It came from
+the Claude Design project "Interactive portfolio redesign", whose other files
+(the prototype itself) are kept outside git at
+`/workspace/redesign-previews/shell-prototype/`.
+
+Rules worth repeating: the prompt user is `guest`, never `jasper`; the site is
+written `wellcaffeinated`, never abbreviated; the writing section is
+**Thoughts** (the old blog is the **archive**); no jokes in the ☰ menu or in
+error recovery; two exits (☰ and ↺) in every mode.
+
 ## Commands
 
 - `pnpm dev` — dev server (`localhost:4321`)
@@ -32,36 +47,63 @@ for it here.
 
 ## Structure
 
-Follows Astro's recommended layout:
+- `src/lib/shell/` — **the REPL library.** Command registry, tokenizer, tab
+  completion, "did you mean", and the output-descriptor types. No DOM, no
+  Astro, no site knowledge; meant to be liftable into its own package.
+- `src/shell/` — **this site's shell.** `commands/` (one object per command,
+  grouped by file), `render.ts` (descriptor → DOM), `host.ts` (wires the page:
+  prompt, log, menu, routing, session), `content.ts` (the browser's content
+  index), `router.ts` (command ⇄ URL), `theme.ts`, `config.ts` (chips, prompt
+  user, boot lines, storage keys).
+- `src/lib/content.ts` — server-side content helpers: sorted collections,
+  reading time, and `toShellItem` (collection entry → index item).
+- `src/thoughts/`, `src/archive/`, `src/projects/`, `src/play/` — content
+  collections (markdown + frontmatter), schemas in `src/content.config.ts`.
+  `src/about.md` and `src/hello.md` are single markdown files imported directly.
+- `src/components/shell/` — the chrome: `TopBar`, `Dock` (chips + prompt),
+  `Log`, `Menu`, `TakeoverBar`, `ThemeScript`, `BrokenOverlay`.
+- `src/components/content/` — content views: `ArticleView`, `ProjectView`,
+  `ToyFrame`, `ManPage`, and `CardGrid` / `RowList` / `Listing` (static twins of
+  the log renderers for section pages).
+- `src/layouts/ShellLayout.astro` — every page. `mode="shell"` (log + prompt) or
+  `mode="takeover"` (content + bars).
+- `src/pages/` — `/` (the shell), `/404`, `/about`, `/{thoughts,archive,
+  projects,play}/` and `[slug]` pages, `/shell/index.json` (the content index).
+- `src/styles/` — `theme.css` (all tokens), `global.css` (reset, prose),
+  `shell.css` (log + descriptor classes; global because the renderer creates
+  those nodes in the browser).
 
-- `src/blog/` — blog posts as markdown; schema in `src/content.config.ts`
-- `src/components/` — reusable `.astro` components (see below)
-- `src/layouts/` — shared `.astro` layouts
-- `src/pages/` — file-based routes (the only Astro-reserved directory)
-- `src/styles/` — global CSS
-- `public/` — static, unprocessed assets
+## How the shell works
 
-### Components (reference examples)
-
-These are intentionally small and idiomatic — follow their patterns:
-
-- `BaseHead.astro` — `<head>` contents; typed props with a default, canonical URL
-- `Header.astro` / `HeaderLink.astro` — nav; `HeaderLink` shows active-route
-  detection (`Astro.url`), `...rest` prop spreading, `class:list`, `<slot>`
-- `Footer.astro` — trivial static component
-- `FormattedDate.astro` — one job (render a `Date` as `<time>`), reused for
-  consistency; formats in UTC so calendar dates don't shift by timezone
-- `PostCard.astro` — typed with `CollectionEntry<'blog'>`, composes `FormattedDate`
+- **Descriptors are the contract.** Commands return plain objects
+  (`text`, `cards`, `rows`, `help`, `error`, `search`, `html`, `navigate`); see
+  `src/lib/shell/types.ts`. `render.ts` has one branch per type. Adding an
+  output shape = one type + one branch. Commands never touch the DOM.
+- **Side effects go through `ctx`** (`src/shell/context.ts`): theme, restart,
+  menu, history, break, fragments. Add to it deliberately.
+- **Tiers:** `shown` (chips) · `hinted` (listed in `help`) · `hidden` (never
+  listed, never tab-completed).
+- **URLs.** Commands with log output live in the hash of `/` (`/#ls+projects`);
+  back/forward replays them. Content opens real pages (`/thoughts/<slug>/`).
+  Everything runnable is rendered as a real `<a href>` (`router.ts` picks the
+  href), so the site navigates without JavaScript.
+- **Session.** The log and history are kept in `sessionStorage` across the
+  trip to a content page and back; returning marks the opening entry ✓.
+- **`cmd:` links.** Markdown can run commands: `[projects](cmd:ls+projects)`.
+  Spaces are `+` because CommonMark link destinations cannot contain spaces.
+- **Theme.** `data-theme` on `<html>`, tokens in `theme.css`, names in
+  `theme.ts`. Add a theme by adding a CSS block and a name.
 
 ## Conventions
 
 - Package manager: **pnpm** — use `pnpm`, not `npm`/`yarn`/`bun`
-- Content: **Astro content collections** — add posts under `src/blog/`;
-  frontmatter is validated by the Zod schema in `src/content.config.ts`
-- Lint + format: **Biome** (single `biome.json`). Biome handles `.ts`/`.js`;
+- Content: **Astro content collections** under `src/<section>/`; frontmatter is
+  validated by the Zod schemas in `src/content.config.ts`
+- Lint + format: **Biome** (single `biome.json`). Biome handles `.ts`/`.js`/`.css`;
   **`.astro` files are excluded** from Biome and formatted by the Astro VS Code
   extension / kept consistent by hand (2-space, single quotes, no semicolons).
 - Type-check `.astro` and content with `pnpm check` (`astro check`), not `tsc`.
+- Comments explain *why*, not what. Prefer a new command object to new UI.
 
 ## Deployment
 
@@ -85,7 +127,10 @@ for contributing to Astro itself), so the docs MCP server is its whole surface.
 
 ## Status
 
-Phase 0 foundation. The blog posts in `src/blog/` are **throwaway
-placeholders** that exercise the pipeline — replace them with real content
-migrated from the old repo (see Purpose).
-See the plan in the notebook project _Website Redesign_.
+Shell foundation. The archive holds four real posts migrated from the old
+site; thoughts, projects and toys are mostly **placeholders** marked as such in
+their bodies. Toys are slots (`ToyFrame`), not simulations. Search is a
+substring match over titles, tags and descriptions (`src/shell/search.ts`);
+Pagefind is the intended swap. Not built yet, on purpose: games, the idle
+white-rabbit sequence, `set` for toy constants, the ✦ discovery counter, real
+physics for `rm -rf /`. See `docs/planning/ideas.md` for each.

@@ -1,0 +1,70 @@
+---
+// Reading view for thoughts and archive posts: serif, wide measure, generous
+// leading. Figures inside the body are light panels (see .prose figure).
+import FormattedDate from '../FormattedDate.astro'
+
+interface Props {
+  title: string
+  section: 'thoughts' | 'archive'
+  date: Date
+  minutes: number
+  tags: string[]
+}
+
+const { title, section, date, minutes, tags } = Astro.props
+const archived = section === 'archive'
+---
+
+<main class="takeover">
+  <article class="article">
+    <div class="meta">
+      {section} · <FormattedDate date={date} /> · {minutes} min
+      {tags.length > 0 && <span class="tags"> · {tags.join(', ')}</span>}
+    </div>
+    {archived && <div class="meta">// archived {date.getUTCFullYear()}. the internet was different.</div>}
+    <h1>{title}</h1>
+    <div class="body prose">
+      <slot />
+    </div>
+  </article>
+</main>
+
+<style>
+  .takeover {
+    flex: 1;
+    animation: rise var(--rise) both;
+  }
+  .article {
+    max-width: var(--measure-read);
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+  .meta {
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+  .meta + .meta {
+    margin-top: 10px;
+  }
+  .tags {
+    color: var(--ok);
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(28px, 5vw, 38px);
+    line-height: 1.12;
+    margin: 12px 0 0;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+  }
+  .body {
+    margin-top: 26px;
+    font-family: var(--font-serif);
+    font-size: var(--text-read);
+    line-height: 1.65;
+  }
+  .body :global(p) {
+    margin-bottom: 1em;
+  }
+</style>

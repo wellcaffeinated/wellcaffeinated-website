@@ -1,0 +1,89 @@
+---
+// Frame, not skin: a toy owns everything between the bars and paints in its
+// own style. This is the slot; each toy will mount its own module here.
+import type { Toy } from '../../lib/content'
+
+interface Props {
+  toy: Toy
+}
+
+const { toy } = Astro.props
+const { title, description, color, ink, constants } = toy.data
+---
+
+<main class="frame" style={`--toy-bg:${color ?? 'var(--panel)'};--toy-ink:${ink ?? 'var(--fg)'}`} data-toy={toy.id}>
+  <div class="note">
+    <strong>{title}</strong> · toy mounts here (its own canvas / framework). {description}
+  </div>
+  {
+    constants.length > 0 && (
+      <dl class="constants">
+        <dt>constants · also "set &lt;name&gt; &lt;value&gt;"</dt>
+        {constants.map((k) => (
+          <dd>
+            {k.name} <span class="value">{k.value}</span> <span class="unit">{k.unit}</span>
+          </dd>
+        ))}
+      </dl>
+    )
+  }
+  <div class="notes prose">
+    <slot />
+  </div>
+</main>
+
+<style>
+  .frame {
+    flex: 1;
+    position: relative;
+    min-height: calc(100dvh - var(--bar-h) - 52px);
+    background: var(--toy-bg);
+    color: var(--toy-ink);
+    background-image: radial-gradient(rgb(0 0 0 / 0.1) 1px, transparent 1px);
+    background-size: 18px 18px;
+    animation: rise var(--rise) both;
+  }
+  .note {
+    position: absolute;
+    left: 16px;
+    top: 14px;
+    max-width: 60%;
+    font-size: var(--text-xs);
+    opacity: 0.7;
+  }
+  .constants {
+    position: absolute;
+    right: 14px;
+    top: 12px;
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    background: rgb(255 255 255 / 0.7);
+    color: #1a1a1a;
+    backdrop-filter: blur(4px);
+    font-size: var(--text-xs);
+    line-height: 1.7;
+  }
+  dt {
+    font-size: 10px;
+    color: #666;
+  }
+  dd {
+    margin: 0;
+  }
+  .value {
+    color: #5b3fae;
+  }
+  .unit {
+    color: #999;
+  }
+  .notes {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: 480px;
+    font-size: var(--text-sm);
+    opacity: 0.8;
+  }
+</style>

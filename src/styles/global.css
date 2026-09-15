@@ -1,17 +1,188 @@
-/* Minimal baseline — not a design. Real styling comes later. */
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "./theme.css";
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  line-height: 1.5;
+html {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-img {
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--accent);
+}
+a:hover {
+  color: var(--fg);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  margin: 0;
+}
+
+img,
+iframe {
   max-width: 100%;
-  height: auto;
+}
+
+[hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: must beat component display rules */
+  display: none !important;
+}
+
+/* Tones are how descriptors ask for colour without naming one. */
+[data-tone="muted"] {
+  color: var(--muted);
+}
+[data-tone="ok"] {
+  color: var(--ok);
+}
+[data-tone="warn"] {
+  color: var(--warn);
+}
+[data-tone="accent"] {
+  color: var(--accent);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Rendered markdown (hello.md, article bodies, project pages). */
+.prose {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+.prose > :first-child {
+  margin-top: 0;
+}
+.prose > :last-child {
+  margin-bottom: 0;
+}
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 1.2em 0 0.4em;
+}
+.prose h1 {
+  font-size: 1.35em;
+}
+.prose h2 {
+  font-size: 1.1em;
+}
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose pre {
+  margin: 0 0 0.7em;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+}
+.prose li + li {
+  margin-top: 0.25em;
+}
+.prose strong {
+  font-weight: 600;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--panel);
+}
+.prose pre {
+  padding: 10px 12px;
+  font-size: var(--text-xs);
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  background: var(--bar);
+}
+.prose pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+.prose blockquote {
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.prose a[href^="cmd:"] {
+  text-decoration: underline dotted;
+}
+
+/* Figures are light panels on purpose; toys and figures choose their own ink. */
+.prose figure,
+.live-figure {
+  margin: 1.6em 0;
+  min-height: 220px;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(0 0 0 / 0.04) 0 8px,
+    transparent 8px 16px
+  );
+  position: relative;
+  overflow: hidden;
+}
+.live-figure figcaption {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font: var(--text-2xs) var(--font-mono);
+  opacity: 0.6;
 }

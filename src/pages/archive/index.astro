@@ -1,0 +1,20 @@
+---
+import Listing from '../../components/content/Listing.astro'
+import RowList from '../../components/content/RowList.astro'
+import ShellLayout from '../../layouts/ShellLayout.astro'
+import { getArchive, toShellItem } from '../../lib/content'
+import { archiveRows } from '../../shell/listings'
+
+const rows = archiveRows((await getArchive()).map(toShellItem))
+---
+
+<ShellLayout
+  title="archive — wellcaffeinated"
+  description="The old blog."
+  cmd="ls thoughts/archive"
+  next={[{ label: 'ls thoughts', cmd: 'ls thoughts' }]}
+>
+  <Listing cmd="ls thoughts/archive">
+    <RowList items={rows} />
+  </Listing>
+</ShellLayout>
