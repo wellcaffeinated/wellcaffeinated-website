@@ -21,6 +21,16 @@ which still serves wellcaffeinated.net and is the source for content migration.
 | `pnpm format`   | Format with Biome                           |
 | `pnpm run deploy`   | Build and deploy to Cloudflare Workers      |
 
+## Deployment
+
+Cloudflare Workers Builds deploys on push. Production is
+[wellcaffeinated-website.wellcaffeinated.workers.dev](https://wellcaffeinated-website.wellcaffeinated.workers.dev);
+other branches get preview URLs of the form
+`<branch>-wellcaffeinated-website.wellcaffeinated.workers.dev`, plus a
+per-commit URL using the version prefix instead of the branch name.
+
+`pnpm run deploy` still publishes straight to production from a local build.
+
 ## Structure
 
 Follows Astro's recommended project layout:
