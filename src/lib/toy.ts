@@ -53,7 +53,15 @@ export interface ToyModule {
   mount(ctx: ToyContext): Unmount | undefined
 }
 
-const TOY_MODULES = import.meta.glob<ToyModule>('/content/play/*/toy.ts')
+// The `_` rule of content.config.ts, said again for code: a folder under a
+// `_` segment is not part of the site, so its toy.ts is never bundled and a
+// half-written one cannot fail the build. Vite reads these patterns
+// statically, so they are literals here and in ToyFrame rather than a shared
+// constant.
+const TOY_MODULES = import.meta.glob<ToyModule>([
+  '/content/play/*/toy.ts',
+  '!/content/play/_*/**',
+])
 
 const toyModulePath = (slug: string) => `/content/play/${slug}/toy.ts`
 

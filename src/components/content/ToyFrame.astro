@@ -26,9 +26,11 @@ const LAYOUTS = {
 // it wins over the `layout` field, the same "if the file is there, it is
 // used" rule. It is handed exactly what a built-in layout is handed, so the
 // components in toy-layouts/ are the worked examples of the contract.
-const OWN_LAYOUTS = import.meta.glob<{ default: AstroComponentFactory }>(
+const OWN_LAYOUTS = import.meta.glob<{ default: AstroComponentFactory }>([
   '/content/play/*/layout.astro',
-)
+  // Not content, so not compiled — the `_` rule, as in lib/toy.ts.
+  '!/content/play/_*/**',
+])
 
 const ownLayoutPath = (slug: string) => `/content/play/${slug}/layout.astro`
 

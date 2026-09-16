@@ -14,15 +14,15 @@ commands for people who don't type; typing is opt-in; every command is a URL.
 
 ## Commands
 
-| Command            | Action                                    |
-| ------------------ | ----------------------------------------- |
-| `pnpm dev`         | Start the dev server at `localhost:4321`  |
-| `pnpm build`       | Build the production site to `dist/`      |
-| `pnpm preview`     | Preview the build locally                 |
-| `pnpm check`       | Type-check `.astro` files (`astro check`) |
-| `pnpm lint`        | Lint with Biome                           |
-| `pnpm format`      | Format with Biome                         |
-| `pnpm run deploy`  | Build and deploy to Cloudflare Workers    |
+| Command           | Action                                                     |
+| ----------------- | ---------------------------------------------------------- |
+| `pnpm dev`        | Start the dev server at `localhost:4321`                   |
+| `pnpm build`      | Type-check, then build the production site to `dist/`      |
+| `pnpm preview`    | Preview the build locally                                  |
+| `pnpm check`      | Type-check `.astro`, `src/` and `content/` (`astro check`) |
+| `pnpm lint`       | Lint with Biome                                            |
+| `pnpm format`     | Format with Biome                                          |
+| `pnpm run deploy` | Build and deploy to Cloudflare Workers                     |
 
 ## Structure
 

@@ -6,9 +6,9 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro check && astro build",
     "preview": "astro preview",
-    "deploy": "astro build && wrangler deploy",
+    "deploy": "pnpm build && wrangler deploy",
     "check": "astro check",
     "lint": "biome check .",
     "format": "biome format . --write"

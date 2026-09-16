@@ -109,9 +109,13 @@ the writeup. `content/play/bloch-sphere/` is the worked example: its layout
 writes gate buttons and a readout, and its `toy.ts` drives them through
 `data-*` attributes that nothing outside that folder reads.
 
-One warning: a `layout.astro` is compiled with the site, so a mistake in one
-fails the whole build — unlike `toy.ts`, which is loaded lazily and can only
-break its own page.
+Both files are compiled with the site, so a syntax error or an unresolvable
+import in either fails `pnpm build` — and because that script runs
+`astro check` first, so does a type error. What differs is *when the code
+runs*: a `layout.astro` runs at build time, so a mistake in what it does stops
+the build; `toy.ts` runs only in a browser, so a mistake in `mount` breaks this
+page and nothing else. Nothing runs a toy headlessly, so its behaviour is still
+only checked by opening the page.
 
 ## Libraries
 
@@ -140,7 +144,14 @@ tagged in every listing. Delete the line when it is ready.
 One caveat worth knowing: `status` hides the **page** and the search index, but
 not the **code**. `toy.ts` is found by `import.meta.glob`, which enumerates at
 build time and cannot see frontmatter, so a draft toy's compiled module is
-still emitted into `dist/` and still named in the shipped loader. Nobody can
-navigate to it, but it is deployed. That is fine for a sketch; if a draft pins
-something heavy, remember it is riding along, and if the code itself should not
-leave your machine, keep it out of `content/play/` until it is ready.
+still emitted into `dist/`, still named in the shipped loader, and still has to
+type-check before `pnpm build` will pass. Nobody can navigate to it, but it is
+deployed. That is fine for a sketch; if a draft pins something heavy, remember
+it is riding along.
+
+So `status` is the wrong tool for code that is not ready to compile. Put that
+folder under a `_` name instead — `content/play/_scratch/`. A `_` segment means
+"not part of the site" to the content loaders, to the globs that find `toy.ts`
+and `layout.astro`, and to `tsconfig.json`, so nothing under it is loaded,
+bundled or type-checked, and nothing under it can fail a build. Rename it when
+it compiles.

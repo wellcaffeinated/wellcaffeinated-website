@@ -39,9 +39,10 @@ error recovery; two exits (☰ and ↺) in every mode.
 ## Commands
 
 - `pnpm dev` — dev server (`localhost:4321`)
-- `pnpm build` — production build to `dist/`
+- `pnpm build` — `astro check && astro build`: type-checks first, then
+  builds to `dist/`
 - `pnpm preview` — preview the build
-- `pnpm check` — `astro check` (type-checks `.astro` + content)
+- `pnpm check` — `astro check` on its own (`.astro`, `src/` and `content/`)
 - `pnpm lint` — Biome check
 - `pnpm format` — Biome format (write)
 
@@ -92,12 +93,17 @@ Two ways to keep something in the repo but off the live site:
   published. Both behave identically: **present in `pnpm dev`, absent from
   `pnpm build`**, and tagged `✎ … · dev only` in every listing and in the top
   bar of their own page, so nothing unpublished is ever mistaken for live.
-  Works on thoughts, archive, projects and play.
+  Works on thoughts, archive, projects and play. It hides the *page*, not the
+  *code*: a draft toy's `toy.ts` is still bundled and still type-checked, so it
+  has to compile.
 - **A path segment starting with `_`** — `content/play/_scratch/`,
   `content/thoughts/_notes.md`. Never loaded at all, so never validated and
-  never published; use it for things that should not even have to parse.
-  Astro applies this rule to `src/pages` by itself but the `glob()` loader does
-  not, so `src/content.config.ts` says it (`NOT_CONTENT`).
+  never published; use it for things that should not even have to parse —
+  the one place a half-written toy can sit without failing a build.
+  Astro applies this rule to `src/pages` by itself; everywhere else has to say
+  it, so it is repeated in `src/content.config.ts` (`NOT_CONTENT`), in the two
+  `import.meta.glob` calls that find `toy.ts` and `layout.astro`, and in
+  `tsconfig.json`'s `exclude`. Nothing loads, bundles or type-checks it.
 
 Prefer `status` for anything you want to look at: it stays schema-checked and
 you can open it in dev. The filter is one predicate in `src/lib/content.ts`,
@@ -155,9 +161,13 @@ in the same folder and nothing outside it reads either, they can share a
 private `data-*` vocabulary — the layout writes the skeleton, the toy drives
 it — which a shared layout could never offer.
 
-Unlike `toy.ts`, which is lazy and can only break its own page, a
-`layout.astro` is compiled with the site: a mistake in one fails `pnpm build`.
-`pnpm check` type-checks it, so errors surface before the build does.
+Both are compiled with the site, whatever their page's `status`, so a syntax
+error or an unresolvable import in either fails `pnpm build` — and since that
+script runs `astro check` first, so does a type error. What differs is *when
+the code runs*: a `layout.astro` runs at build time, so a mistake in what it
+does stops the build; `toy.ts` runs only in a browser, so a mistake in `mount`
+breaks its own page and nothing else. Nothing exercises a toy headlessly, so
+runtime behaviour is still only checked by opening the page.
 
 `content/play/bloch-sphere/` is the worked example of both: its `layout.astro`
 writes the gate keys and the θ/φ readout, its `toy.ts` drives them, and the toy
@@ -235,6 +245,12 @@ Cloudflare Workers static assets, configured in `wrangler.jsonc` (no Worker
 script — `assets.directory` points at `dist/`). `pnpm run deploy` builds and
 publishes; Cloudflare's Workers Builds can also deploy on push once the repo is
 connected.
+
+Workers Builds runs `pnpm run build`, and its build command lives in the
+Cloudflare dashboard rather than in `wrangler.jsonc` — nothing in the repo can
+see it. So the type-check gate belongs inside the `build` script, where local,
+CI and Cloudflare all inherit it, and `deploy` calls `pnpm build` rather than
+`astro build` for the same reason.
 
 ## Agent tooling
 
