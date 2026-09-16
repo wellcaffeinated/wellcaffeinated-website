@@ -1,0 +1,91 @@
+---
+// Frame, not skin: this owns what makes a toy a toy — its identity, its
+// constants, its colours and the mounting — and hands the arranging to a
+// layout. The script below mounts content/play/<slug>/toy.ts if there is one;
+// until then the layout's hole is a labelled slot.
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js'
+import type { Toy } from '../../lib/content'
+import type { Places, ToyConstants } from '../../lib/toy'
+import ArticleLayout from './toy-layouts/ArticleLayout.astro'
+import ScrollLayout from './toy-layouts/ScrollLayout.astro'
+import StageLayout from './toy-layouts/StageLayout.astro'
+
+interface Props {
+  toy: Toy
+}
+
+// One layout per name, the way render.ts keeps one renderer per descriptor.
+const LAYOUTS = {
+  stage: StageLayout,
+  article: ArticleLayout,
+  scroll: ScrollLayout,
+} as const
+
+// A toy may bring its own layout instead of choosing one. Found the way
+// loadToy finds toy.ts — by glob, so src still names no particular toy — and
+// it wins over the `layout` field, the same "if the file is there, it is
+// used" rule. It is handed exactly what a built-in layout is handed, so the
+// components in toy-layouts/ are the worked examples of the contract.
+const OWN_LAYOUTS = import.meta.glob<{ default: AstroComponentFactory }>([
+  '/content/play/*/layout.astro',
+  // Not content, so not compiled — the `_` rule, as in lib/toy.ts.
+  '!/content/play/_*/**',
+])
+
+const ownLayoutPath = (slug: string) => `/content/play/${slug}/layout.astro`
+
+// Corners the stage understands; the layouts that flow read only `none`.
+const DEFAULT_PLACES = {
+  notes: 'bottom-left',
+  constants: 'top-right',
+} satisfies Required<Places>
+
+const { toy } = Astro.props
+const { color, ink, constants, layout, places } = toy.data
+const constantsByName: ToyConstants = Object.fromEntries(
+  constants.map((constant) => [constant.name, constant.value]),
+)
+
+const loadOwnLayout = OWN_LAYOUTS[ownLayoutPath(toy.id)]
+const Layout = loadOwnLayout
+  ? (await loadOwnLayout()).default
+  : LAYOUTS[layout]
+---
+
+<main
+  class="frame"
+  style={`--toy-bg:${color ?? 'var(--panel)'};--toy-ink:${ink ?? 'var(--fg)'}`}
+  data-toy={toy.id}
+  data-constants={JSON.stringify(constantsByName)}
+>
+  <Layout toy={toy} places={{ ...DEFAULT_PLACES, ...places }}>
+    <slot />
+  </Layout>
+</main>
+
+<script>
+  import { createToyContext, loadToy, type ToyConstants } from '../../lib/toy'
+
+  async function mountToy(frame: HTMLElement) {
+    const slug = frame.dataset.toy ?? ''
+    const el = frame.querySelector<HTMLElement>('[data-toy-mount]')
+    const loading = loadToy(slug)
+    if (!el || !loading) return
+    const constants: ToyConstants = JSON.parse(frame.dataset.constants ?? '{}')
+    const toy = await loading
+    toy.mount(createToyContext(el, constants))
+    const note = frame.querySelector<HTMLElement>('[data-toy-note]')
+    if (note) note.hidden = true
+  }
+
+  const frame = document.querySelector<HTMLElement>('[data-toy]')
+  if (frame) mountToy(frame)
+</script>
+
+<style>
+  .frame {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+</style>

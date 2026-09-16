@@ -1,0 +1,31 @@
+---
+// Static twin of the `cards` renderer branch in src/shell/render.ts.
+// Same classes, same markup, so section pages match the log.
+import type { Card } from '../../lib/shell'
+import { hrefFor } from '../../shell/router'
+
+interface Props {
+  items: Card[]
+}
+
+const { items } = Astro.props
+---
+
+<div class="out-cards">
+  {
+    items.map((c) => (
+      <a
+        class="card"
+        href={hrefFor(c.cmd)}
+        data-cmd={c.cmd}
+        style={c.color ? `--card-bg:${c.color};--card-ink:${c.ink ?? 'inherit'}` : undefined}
+      >
+        <span class="card-meta">{c.meta}</span>
+        <span class="card-title">
+          <span>{c.title}</span>
+          {c.badge && <span class="card-badge">{c.badge}</span>}
+        </span>
+      </a>
+    ))
+  }
+</div>

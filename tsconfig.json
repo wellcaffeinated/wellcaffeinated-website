@@ -1,5 +1,14 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  // `_` is the "not content" rule of content.config.ts. Since `pnpm build`
+  // now type-checks first, a WIP under a `_` folder must be invisible here
+  // too, or it could still fail a build it is excluded from.
+  "exclude": ["dist", "content/**/_*", "content/**/_*/**"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@lib/*": ["src/lib/*"]
+    }
+  }
 }

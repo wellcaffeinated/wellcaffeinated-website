@@ -1,0 +1,75 @@
+---
+// The toy as a figure in a reading column: the page scrolls, the writeup is
+// the point, and the toy is an illustration at the top of it. Chrome flows,
+// so only `none` applies from `places`.
+import type { ToyLayoutProps } from '../../../lib/toy'
+import ConstantsPanel from './ConstantsPanel.astro'
+import ToyMount from './ToyMount.astro'
+
+type Props = ToyLayoutProps
+
+const { toy, places } = Astro.props
+const { title, description, constants, aspect } = toy.data
+---
+
+<article class="article">
+  <h1>{title}</h1>
+  <p class="lede">{description}</p>
+  <figure class="figure" style={`--toy-aspect:${aspect}`}>
+    <ToyMount title={title} description={description} />
+  </figure>
+  {
+    constants.length > 0 && places.constants !== 'none' && (
+      <div class="readout">
+        <ConstantsPanel constants={constants} />
+      </div>
+    )
+  }
+  {
+    places.notes !== 'none' && (
+      <div class="body prose">
+        <slot />
+      </div>
+    )
+  }
+</article>
+
+<style>
+  .article {
+    flex: 1;
+    max-width: var(--measure-read);
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    animation: rise var(--rise) both;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(28px, 5vw, 38px);
+    line-height: 1.12;
+    margin: 0;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+  }
+  .lede {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .figure {
+    margin: 24px 0 0;
+    aspect-ratio: var(--toy-aspect);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--toy-bg);
+    color: var(--toy-ink);
+  }
+  .readout {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  .body {
+    margin-top: 28px;
+  }
+</style>

@@ -1,0 +1,48 @@
+---
+// The constants readout. Its position is the layout's business; this is only
+// what it looks like.
+import type { Toy } from '../../../lib/content'
+
+interface Props {
+  constants: Toy['data']['constants']
+}
+
+const { constants } = Astro.props
+---
+
+<dl class="constants">
+  <dt>constants · also "set &lt;name&gt; &lt;value&gt;"</dt>
+  {
+    constants.map((k) => (
+      <dd>
+        {k.name} <span class="value">{k.value}</span> <span class="unit">{k.unit}</span>
+      </dd>
+    ))
+  }
+</dl>
+
+<style>
+  .constants {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    background: rgb(255 255 255 / 0.7);
+    color: #1a1a1a;
+    backdrop-filter: blur(4px);
+    font-size: var(--text-xs);
+    line-height: 1.7;
+  }
+  dt {
+    font-size: 10px;
+    color: #666;
+  }
+  dd {
+    margin: 0;
+  }
+  .value {
+    color: #5b3fae;
+  }
+  .unit {
+    color: #999;
+  }
+</style>

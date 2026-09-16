@@ -1,0 +1,125 @@
+---
+// Completions · chips · prompt. Chips are the primary input; typing is opt-in.
+// Chips are real links so the site navigates without JavaScript.
+import { CHIPS, PROMPT_USER } from '../../shell/config'
+import { hrefFor } from '../../shell/router'
+---
+
+<div class="dock">
+  <div class="inner">
+    <div class="completions" role="listbox" aria-label="Completions" data-completions hidden></div>
+    <div class="chips">
+      {
+        CHIPS.map((c) => (
+          <a href={hrefFor(c.cmd)} class="chip" data-cmd={c.cmd} data-type>
+            <span>{c.label}</span>
+            <span class="chip-cmd">{c.cmd}</span>
+          </a>
+        ))
+      }
+    </div>
+    <form class="prompt" data-prompt>
+      <label for="prompt" class="user">{PROMPT_USER} $</label>
+      <input
+        id="prompt"
+        name="cmd"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Command prompt"
+        placeholder="type here, or don't"
+      />
+      <span class="hint" aria-live="polite" data-prompt-hint></span>
+    </form>
+  </div>
+</div>
+
+<style>
+  .dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    padding-top: 24px;
+    background: linear-gradient(to bottom, transparent, var(--bg) 24px);
+  }
+  .inner {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 16px 12px;
+  }
+  .completions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: var(--gap);
+  }
+  .completions :global(button) {
+    padding: 6px 10px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+  .completions :global(button:hover) {
+    color: var(--fg);
+  }
+  .chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: var(--gap);
+    scrollbar-width: none;
+  }
+  .chip {
+    flex: none;
+    display: flex;
+    align-items: baseline;
+    gap: var(--gap);
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-size: var(--text-sm);
+    color: var(--fg);
+    background: var(--bg);
+    text-decoration: none;
+    transition: border-color 0.12s;
+  }
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--fg);
+  }
+  .chip-cmd {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .prompt {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+  }
+  .prompt:focus-within {
+    border-color: var(--accent);
+  }
+  .user {
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  input {
+    flex: 1;
+    min-width: 0;
+    color: var(--fg);
+  }
+  input::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  .hint {
+    font-size: var(--text-2xs);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+</style>

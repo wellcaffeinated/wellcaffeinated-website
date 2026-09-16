@@ -1,0 +1,47 @@
+---
+// Every page is the shell. In `shell` mode the page is the log and the prompt;
+// in `takeover` mode the slot is a piece of content and the bars stay.
+import BaseHead from '../components/BaseHead.astro'
+import BrokenOverlay from '../components/shell/BrokenOverlay.astro'
+import Dock from '../components/shell/Dock.astro'
+import Menu from '../components/shell/Menu.astro'
+import type { Suggestion } from '../components/shell/TakeoverBar.astro'
+import TakeoverBar from '../components/shell/TakeoverBar.astro'
+import ThemeScript from '../components/shell/ThemeScript.astro'
+import TopBar from '../components/shell/TopBar.astro'
+import type { Status } from '../lib/status'
+import '../styles/global.css'
+import '../styles/shell.css'
+
+interface Props {
+  title: string
+  description?: string
+  mode?: 'shell' | 'takeover'
+  /** Set only on content that never reaches the build; the bar says so. */
+  status?: Status
+  /** takeover: the command that opens this page. */
+  cmd?: string
+  /** takeover: chips in the bottom bar. */
+  next?: Suggestion[]
+  /** shell: this is the 404 page; the host runs `open <path>` on load. */
+  notFound?: boolean
+}
+
+const { title, description, mode = 'takeover', cmd, next, notFound, status } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title={title} description={description} />
+    <ThemeScript />
+  </head>
+  <body data-shell data-not-found={notFound ? '' : undefined}>
+    <TopBar cmd={mode === 'takeover' ? cmd : undefined} status={status} />
+    <slot />
+    {mode === 'shell' ? <Dock /> : <TakeoverBar next={next} />}
+    <Menu />
+    <BrokenOverlay />
+    <script src="../shell/host.ts"></script>
+  </body>
+</html>

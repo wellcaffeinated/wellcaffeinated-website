@@ -1,0 +1,23 @@
+---
+import Listing from '../../components/content/Listing.astro'
+import RowList from '../../components/content/RowList.astro'
+import ShellLayout from '../../layouts/ShellLayout.astro'
+import { getArchive, getThoughts, toShellItem } from '../../lib/content'
+import { thoughtRows } from '../../shell/listings'
+
+const rows = thoughtRows((await getThoughts()).map(toShellItem), (await getArchive()).map(toShellItem))
+---
+
+<ShellLayout
+  title="thoughts — wellcaffeinated"
+  description="Writing."
+  cmd="ls thoughts"
+  next={[
+    { label: 'ls projects', cmd: 'ls projects' },
+    { label: 'ls play', cmd: 'ls play' },
+  ]}
+>
+  <Listing cmd="ls thoughts">
+    <RowList items={rows} />
+  </Listing>
+</ShellLayout>

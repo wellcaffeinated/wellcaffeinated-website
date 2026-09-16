@@ -21,47 +21,223 @@ will be archived once this site is live.
 When you need old content, clone or read that repo directly rather than looking
 for it here.
 
+### The design
+
+The site is a **shell**: a terminal-shaped frame whose output is rich UI.
+Commands are chips for people who don't type; typing is opt-in. The design
+record (principles, vocabulary, backlog of un-built ideas) is
+`docs/planning/ideas.md`; read it before changing the interaction. It came from
+the Claude Design project "Interactive portfolio redesign", whose other files
+(the prototype itself) are kept outside git at
+`/workspace/redesign-previews/shell-prototype/`.
+
+Rules worth repeating: the prompt user is `guest`, never `jasper`; the site is
+written `wellcaffeinated`, never abbreviated; the writing section is
+**Thoughts** (the old blog is the **archive**); no jokes in the ☰ menu or in
+error recovery; two exits (☰ and ↺) in every mode.
+
 ## Commands
 
 - `pnpm dev` — dev server (`localhost:4321`)
-- `pnpm build` — production build to `dist/`
+- `pnpm build` — `astro check && astro build`: type-checks first, then
+  builds to `dist/`
 - `pnpm preview` — preview the build
-- `pnpm check` — `astro check` (type-checks `.astro` + content)
+- `pnpm check` — `astro check` on its own (`.astro`, `src/` and `content/`)
 - `pnpm lint` — Biome check
 - `pnpm format` — Biome format (write)
 
 ## Structure
 
-Follows Astro's recommended layout:
+- `src/lib/shell/` — **the REPL library.** Command registry, tokenizer, tab
+  completion, "did you mean", and the output-descriptor types. No DOM, no
+  Astro, no site knowledge; meant to be liftable into its own package.
+- `src/shell/` — **this site's shell.** `commands/` (one file per command;
+  `one-liners.ts` holds the fixed-reply gags, `util.ts` the shared helpers,
+  `index.ts` the registration list), `render.ts` (descriptor → DOM),
+  `host.ts` (wires the page: prompt, log, menu, routing, session),
+  `content.ts` (the browser's content index), `router.ts` (command ⇄ URL),
+  `theme.ts`, `config.ts` (chips, prompt user, boot lines, storage keys).
+- `src/lib/content.ts` — server-side content helpers: sorted collections,
+  reading time, and `toShellItem` (collection entry → index item).
+- `content/` — **everything written**, outside `src/` on purpose.
+  `thoughts/`, `archive/`, `projects/` hold markdown + frontmatter; `play/`
+  holds one folder per toy (`index.md` is the writeup, an optional `toy.ts`
+  is the code); `about.md` and `hello.md` are single-file collections.
+  Schemas in `src/content.config.ts`, which is the only place `src/` names
+  a content path.
+- `src/lib/toy.ts` — everything a toy folder may implement: the mount contract
+  (`mount({ el, constants, onResize })`), `ToyLayoutProps` for a toy's own
+  `layout.astro`, and `loadToy(slug)`, which finds `content/play/<slug>/toy.ts`
+  through `import.meta.glob`.
+- `src/components/shell/` — the chrome: `TopBar`, `Dock` (chips + prompt),
+  `Log`, `Menu`, `TakeoverBar`, `ThemeScript`, `BrokenOverlay`.
+- `src/components/content/` — content views: `ArticleView`, `ProjectView`,
+  `ToyFrame`, `ManPage`, and `CardGrid` / `RowList` / `Listing` (static twins of
+  the log renderers for section pages). `toy-layouts/` holds one component per
+  built-in toy layout plus the two pieces they share, `ToyMount` and
+  `ConstantsPanel`.
+- `src/layouts/ShellLayout.astro` — every page. `mode="shell"` (log + prompt) or
+  `mode="takeover"` (content + bars).
+- `src/pages/` — `/` (the shell), `/404`, `/about`, `/{thoughts,archive,
+  projects,play}/` and `[slug]` pages, `/shell/index.json` (the content index).
+- `src/styles/` — `theme.css` (all tokens), `global.css` (reset, prose),
+  `shell.css` (log + descriptor classes; global because the renderer creates
+  those nodes in the browser).
 
-- `src/blog/` — blog posts as markdown; schema in `src/content.config.ts`
-- `src/components/` — reusable `.astro` components (see below)
-- `src/layouts/` — shared `.astro` layouts
-- `src/pages/` — file-based routes (the only Astro-reserved directory)
-- `src/styles/` — global CSS
-- `public/` — static, unprocessed assets
+## Content that is not for the site
 
-### Components (reference examples)
+Two ways to keep something in the repo but off the live site:
 
-These are intentionally small and idiomatic — follow their patterns:
+- **`status:` in frontmatter** — `draft` (on its way to being published) or
+  `reference` (kept deliberately, to show how something is done). Absent means
+  published. Both behave identically: **present in `pnpm dev`, absent from
+  `pnpm build`**, and tagged `✎ … · dev only` in every listing and in the top
+  bar of their own page, so nothing unpublished is ever mistaken for live.
+  Works on thoughts, archive, projects and play. It hides the *page*, not the
+  *code*: a draft toy's `toy.ts` is still bundled and still type-checked, so it
+  has to compile.
+- **A path segment starting with `_`** — `content/play/_scratch/`,
+  `content/thoughts/_notes.md`. Never loaded at all, so never validated and
+  never published; use it for things that should not even have to parse —
+  the one place a half-written toy can sit without failing a build.
+  Astro applies this rule to `src/pages` by itself; everywhere else has to say
+  it, so it is repeated in `src/content.config.ts` (`NOT_CONTENT`), in the two
+  `import.meta.glob` calls that find `toy.ts` and `layout.astro`, and in
+  `tsconfig.json`'s `exclude`. Nothing loads, bundles or type-checks it.
 
-- `BaseHead.astro` — `<head>` contents; typed props with a default, canonical URL
-- `Header.astro` / `HeaderLink.astro` — nav; `HeaderLink` shows active-route
-  detection (`Astro.url`), `...rest` prop spreading, `class:list`, `<slot>`
-- `Footer.astro` — trivial static component
-- `FormattedDate.astro` — one job (render a `Date` as `<time>`), reused for
-  consistency; formats in UTC so calendar dates don't shift by timezone
-- `PostCard.astro` — typed with `CollectionEntry<'blog'>`, composes `FormattedDate`
+Prefer `status` for anything you want to look at: it stays schema-checked and
+you can open it in dev. The filter is one predicate in `src/lib/content.ts`,
+and every surface — section pages, `[slug]` pages, `ls`, search, prev/next,
+`/shell/index.json` — inherits it because nothing else calls `getCollection`.
+`pnpm preview` serves the build, so it is the honest check of what ships.
+
+Changing a loader `pattern` does not invalidate the content cache of a running
+dev server: restart it, or a `_` folder added to the config will still resolve.
+
+## The content boundary
+
+`src/` is the foundation; `content/` is what Jasper writes. The direction
+of dependency is one way: content may import site helpers via the `@lib/*`
+alias (`tsconfig.json` → `src/lib/`), and `src/` discovers content only
+through the collection loaders and `loadToy`. Nothing in `src/` imports a
+specific piece of content, so deleting a toy folder cannot break the site
+and adding one never touches `src/`.
+
+A toy that needs code adds `toy.ts` next to its `index.md`:
+
+```ts
+import type { ToyModule } from '@lib/toy'
+export const mount: ToyModule['mount'] = ({ el, constants, onResize }) => {
+  // draw into el; constants come from the frontmatter, by name
+  onResize(({ width, height }) => {}) // el is the layout's to size
+  return () => {} // optional cleanup
+}
+```
+
+`el` is a box, not the viewport: a layout decides how big it is, and it can
+change size without the window changing. Size from `onResize`, never from
+`window`.
+
+**How the page is arranged** is the `layout` field in a toy's frontmatter:
+`stage` (the default — the toy owns everything between the bars, the writeup
+sits on top of it), `article` (a reading column with the toy as a figure) or
+`scroll` (the toy pinned while the writing scrolls past). `ToyFrame` keeps
+what makes a toy a toy — identity, constants, colours, mounting — and picks
+the layout from a `LAYOUTS` table; a new layout is one component plus one key.
+`places` moves the writeup and the constants readout between corners (the
+stage positions absolutely, so only it reads corners; the layouts that flow
+read only `none`), and `aspect` sets the figure's shape where a layout gives
+the toy a box of its own.
+
+**A toy that wants its own arrangement** adds a `layout.astro` beside its
+`index.md`. `ToyFrame` finds it by glob, exactly as `loadToy` finds `toy.ts`,
+so `src/` still names no particular toy; if the file is there it is used, and
+the `layout` field is ignored. It is handed `ToyLayoutProps` (from `@lib/toy`,
+the one module holding everything a toy folder may implement), and owes two
+things back: `data-toy-mount` on the element the toy should paint into, and a
+`<slot />` for the writeup. The components in `src/components/content/
+toy-layouts/` are the worked examples. Since `layout.astro` and `toy.ts` sit
+in the same folder and nothing outside it reads either, they can share a
+private `data-*` vocabulary — the layout writes the skeleton, the toy drives
+it — which a shared layout could never offer.
+
+Both are compiled with the site, whatever their page's `status`, so a syntax
+error or an unresolvable import in either fails `pnpm build` — and since that
+script runs `astro check` first, so does a type error. What differs is *when
+the code runs*: a `layout.astro` runs at build time, so a mistake in what it
+does stops the build; `toy.ts` runs only in a browser, so a mistake in `mount`
+breaks its own page and nothing else. Nothing exercises a toy headlessly, so
+runtime behaviour is still only checked by opening the page.
+
+`content/play/bloch-sphere/` is the worked example of both: its `layout.astro`
+writes the gate keys and the θ/φ readout, its `toy.ts` drives them, and the toy
+falls back to autoplaying on its own when a built-in layout gives it only a
+box.
+
+**Toys that need libraries** add a `package.json` in their folder listing
+just those libraries; `pnpm-workspace.yaml` makes every `content/play/*`
+folder a workspace package, so `pnpm install` at the root picks it up. The
+toy resolves its own copy, so two toys may pin different versions of the
+same library and a new toy can never break an old one. Vite still bundles
+each toy as its own lazy chunk, so a library only downloads when its toy is
+opened. `content/play/bloch-sphere/` is the worked example.
+
+Shared code in `src/lib` depends on nothing, so it can serve every toy;
+Jasper keeps it backwards compatible. A helper that wraps a specific library
+does not belong there.
+
+## How the shell works
+
+- **Descriptors are the contract.** Commands return plain objects
+  (`text`, `cards`, `rows`, `help`, `error`, `search`, `html`, `navigate`); see
+  `src/lib/shell/types.ts`. `render.ts` has one renderer per type in its
+  `RENDERERS` table. Adding an output shape = one type + one renderer.
+  Commands never touch the DOM.
+- **Side effects go through `ctx`** (`src/shell/context.ts`): theme, restart,
+  menu, history, break, fragments. Add to it deliberately.
+- **Tiers:** `shown` (chips) · `hinted` (listed in `help`) · `hidden` (never
+  listed, never tab-completed).
+- **URLs.** Commands with log output live in the hash of `/` (`/#ls+projects`);
+  back/forward replays them. Content opens real pages (`/thoughts/<slug>/`).
+  Everything runnable is rendered as a real `<a href>` (`router.ts` picks the
+  href), so the site navigates without JavaScript.
+- **Session.** The log and history are kept in `sessionStorage` across the
+  trip to a content page and back; returning marks the opening entry ✓.
+- **`cmd:` links.** Markdown can run commands: `[projects](cmd:ls+projects)`.
+  Spaces are `+` because CommonMark link destinations cannot contain spaces.
+- **Theme.** `data-theme` on `<html>`, tokens in `theme.css`, names in
+  `theme.ts`. Add a theme by adding a CSS block and a name.
 
 ## Conventions
 
 - Package manager: **pnpm** — use `pnpm`, not `npm`/`yarn`/`bun`
-- Content: **Astro content collections** — add posts under `src/blog/`;
-  frontmatter is validated by the Zod schema in `src/content.config.ts`
-- Lint + format: **Biome** (single `biome.json`). Biome handles `.ts`/`.js`;
+- Content: **Astro content collections** under `src/<section>/`; frontmatter is
+  validated by the Zod schemas in `src/content.config.ts`
+- Lint + format: **Biome** (single `biome.json`). Biome handles `.ts`/`.js`/`.css`;
   **`.astro` files are excluded** from Biome and formatted by the Astro VS Code
   extension / kept consistent by hand (2-space, single quotes, no semicolons).
 - Type-check `.astro` and content with `pnpm check` (`astro check`), not `tsc`.
+- Comments explain *why*, not what. Prefer a new command object to new UI.
+
+## Code style
+
+The full conventions are the "Coding Preferences" note in Jasper's notebook
+(`03 Resources/Coding/Coding Preferences.md`); read it before writing code.
+Biome enforces what a linter can (`===`, template literals, `for…of`, no
+nested ternaries, no parameter reassignment, early returns over `else`,
+naming, kebab-case filenames, no `console`). The rest is by hand:
+
+- One file per command in `src/shell/commands/` unless that is genuinely
+  awkward (`one-liners.ts` is the exception: fixed replies, no logic).
+- Dispatch tables over `switch` / `if` chains when branching on a key.
+- `+= 1`, never `++`. Braces on any `if` the formatter breaks across lines.
+- Immutable by default: spread, `map` / `filter` / `flatMap`; no `push` into
+  shared arrays. Pass named callbacks point-free.
+- Module-level constants in `UPPER_SNAKE_CASE`, showing their derivation;
+  locals stay `camelCase`. Name things so comments become unnecessary.
+- Factories over classes; dependencies passed in, not imported at module scope.
+- `satisfies` over `as`; `unknown` over `any`; let obvious types infer.
+- An options object once a function needs more than 3–4 positional arguments.
 
 ## Deployment
 
@@ -69,6 +245,12 @@ Cloudflare Workers static assets, configured in `wrangler.jsonc` (no Worker
 script — `assets.directory` points at `dist/`). `pnpm run deploy` builds and
 publishes; Cloudflare's Workers Builds can also deploy on push once the repo is
 connected.
+
+Workers Builds runs `pnpm run build`, and its build command lives in the
+Cloudflare dashboard rather than in `wrangler.jsonc` — nothing in the repo can
+see it. So the type-check gate belongs inside the `build` script, where local,
+CI and Cloudflare all inherit it, and `deploy` calls `pnpm build` rather than
+`astro build` for the same reason.
 
 ## Agent tooling
 
@@ -85,7 +267,12 @@ for contributing to Astro itself), so the docs MCP server is its whole surface.
 
 ## Status
 
-Phase 0 foundation. The blog posts in `src/blog/` are **throwaway
-placeholders** that exercise the pipeline — replace them with real content
-migrated from the old repo (see Purpose).
-See the plan in the notebook project _Website Redesign_.
+Shell foundation. The archive holds four real posts migrated from the old
+site; thoughts, projects and toys are mostly **placeholders** marked as such in
+their bodies. `bloch-sphere` is the one real toy (and the test case for
+per-toy packages and for a toy's own `layout.astro`); the other toys are slots
+with no `toy.ts` yet. Search is a
+substring match over titles, tags and descriptions (`src/shell/search.ts`);
+Pagefind is the intended swap. Not built yet, on purpose: games, the idle
+white-rabbit sequence, `set` for toy constants, the ✦ discovery counter, real
+physics for `rm -rf /`. See `docs/planning/ideas.md` for each.

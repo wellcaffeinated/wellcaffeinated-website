@@ -1,4 +1,13 @@
+# Each toy folder under content/play may be a package of its own, so a toy
+# can pin the libraries it was built against without touching the site.
+packages:
+  - 'content/play/*'
+
+# Dependency build scripts. Astro and wrangler need theirs (native binaries);
+# core-js's only prints a funding banner.
 allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+  core-js: false
+  core-js-pure: false

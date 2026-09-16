@@ -1,0 +1,120 @@
+---
+import type { Project } from '../../lib/content'
+
+interface Props {
+  project: Project
+}
+
+const { project } = Astro.props
+const { title, description, alive, years, role, stack, links } = project.data
+const status = alive ? `● alive · ${years}` : `${years} · retired`
+---
+
+<main class="takeover">
+  <article class="project">
+    <div class="hero">
+      <span>hero: screenshot, loop, or the live project embedded · placeholder</span>
+    </div>
+    <div class="content">
+      <div class="head">
+        <h1>{title}</h1>
+        <span class="status">{status}</span>
+      </div>
+      <p class="blurb">{description}</p>
+      <dl>
+        {role && <dt>role</dt>}{role && <dd>{role}</dd>}
+        {stack && <dt>stack</dt>}{stack && <dd>{stack}</dd>}
+        {links.length > 0 && <dt>links</dt>}
+        {
+          links.length > 0 && (
+            <dd class="links">
+              {links.map((l) => (
+                <a href={l.href} target="_blank" rel="noopener">
+                  {l.label} ↗
+                </a>
+              ))}
+            </dd>
+          )
+        }
+      </dl>
+      <div class="prose body">
+        <slot />
+      </div>
+    </div>
+  </article>
+</main>
+
+<style>
+  .takeover {
+    flex: 1;
+    animation: rise var(--rise) both;
+  }
+  .project {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 0 80px;
+    font-family: var(--font-body);
+  }
+  .hero {
+    aspect-ratio: 16 / 7;
+    background: var(--panel);
+    background-image: repeating-linear-gradient(135deg, rgb(127 127 127 / 0.06) 0 10px, transparent 10px 20px);
+    position: relative;
+  }
+  .hero span {
+    position: absolute;
+    left: 16px;
+    bottom: 10px;
+    font: var(--text-2xs) var(--font-mono);
+    color: var(--muted);
+  }
+  .content {
+    padding: 22px 20px 0;
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(24px, 4vw, 30px);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .status {
+    font: var(--text-xs) var(--font-mono);
+    color: var(--ok);
+  }
+  .blurb {
+    margin: 12px 0 0;
+    font-size: 16px;
+    line-height: 1.55;
+    max-width: 560px;
+    text-wrap: pretty;
+  }
+  dl {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 16px;
+    margin: 20px 0 0;
+    font: var(--text-sm) / 1.6 var(--font-mono);
+  }
+  dt {
+    color: var(--muted);
+  }
+  dd {
+    margin: 0;
+  }
+  .links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .body {
+    margin-top: 28px;
+    max-width: 560px;
+  }
+</style>

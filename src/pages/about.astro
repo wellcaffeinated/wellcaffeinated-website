@@ -1,0 +1,20 @@
+---
+import { render } from 'astro:content'
+import ManPage from '../components/content/ManPage.astro'
+import ShellLayout from '../layouts/ShellLayout.astro'
+import { getAbout } from '../lib/content'
+
+const about = await getAbout()
+const { Content } = await render(about)
+---
+
+<ShellLayout
+  title="man jasper — wellcaffeinated"
+  description={about.data.tagline}
+  cmd="man jasper"
+  next={[{ label: 'ls projects', cmd: 'ls projects' }]}
+>
+  <ManPage {...about.data}>
+    <Content />
+  </ManPage>
+</ShellLayout>

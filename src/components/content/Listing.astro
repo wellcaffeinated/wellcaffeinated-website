@@ -1,0 +1,31 @@
+---
+// A section page without the shell: the listing as a plain page, so
+// /projects/ etc. work with no JavaScript and read well in a crawler.
+import { PROMPT_USER } from '../../shell/config'
+
+interface Props {
+  /** The command this page stands in for, e.g. "ls projects". */
+  cmd: string
+}
+
+const { cmd } = Astro.props
+---
+
+<main class="listing">
+  <div class="entry-cmd">
+    <span class="prompt-user">{PROMPT_USER} $</span>
+    <span>{cmd}</span>
+  </div>
+  <slot />
+</main>
+
+<style>
+  .listing {
+    flex: 1;
+    width: 100%;
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+    animation: rise var(--rise) both;
+  }
+</style>

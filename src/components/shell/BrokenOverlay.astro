@@ -1,0 +1,40 @@
+---
+// `rm -rf /`: a placeholder for the physics collapse. Everything "falls",
+// then the host restarts the shell.
+---
+
+<div class="broken" data-broken hidden>
+  <div class="falls">
+    <div>everything falls under gravity here.</div>
+    <div class="note">(placeholder: real physics on the actual glyphs. rebooting…)</div>
+  </div>
+</div>
+
+<style>
+  .broken {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+  }
+  .falls {
+    animation: fall 2.2s cubic-bezier(0.4, 0, 1, 1) 0.6s both;
+    font-size: 15px;
+  }
+  .note {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    margin-top: 6px;
+  }
+  @keyframes fall {
+    to {
+      transform: translateY(120vh) rotate(8deg);
+      opacity: 0;
+    }
+  }
+</style>

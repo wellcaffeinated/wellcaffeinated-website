@@ -1,0 +1,19 @@
+---
+// Applies the saved theme before first paint so there is no flash.
+// Inline on purpose: it must run before any stylesheet is used.
+import { STORAGE_KEYS } from '../../shell/config'
+import { DEFAULT_THEME, THEMES } from '../../shell/theme'
+
+const key = STORAGE_KEYS.theme
+const themes = THEMES
+const fallback = DEFAULT_THEME
+---
+
+<script is:inline define:vars={{ key, themes, fallback }}>
+  try {
+    const saved = localStorage.getItem(key)
+    document.documentElement.dataset.theme = themes.includes(saved) ? saved : fallback
+  } catch {
+    document.documentElement.dataset.theme = fallback
+  }
+</script>

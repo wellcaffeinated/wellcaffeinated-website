@@ -1,0 +1,112 @@
+---
+// `man jasper`: the about page as a manual page. The fields are the `about`
+// collection's schema in src/content.config.ts.
+import type { About } from '../../lib/content'
+
+type Props = About['data']
+
+const { name, tagline, synopsis, status, bugs, seeAlso } = Astro.props
+const header = `${name.toUpperCase()}(1)`
+---
+
+<main class="takeover">
+  <article class="man">
+    <div class="man-head"><span>{header}</span><span>People Manual</span><span>{header}</span></div>
+    <div class="sections">
+      <section><h2>NAME</h2><p>{name} — {tagline}</p></section>
+      <section><h2>SYNOPSIS</h2><p>{synopsis}</p></section>
+      <section>
+        <h2>DESCRIPTION</h2>
+        <div class="prose"><slot /></div>
+      </section>
+      <section>
+        <h2>SEE ALSO</h2>
+        <p class="links">
+          {seeAlso.map((l) => <a href={l.href} target="_blank" rel="noopener">{l.label}(1)</a>)}
+        </p>
+      </section>
+      <section><h2>BUGS</h2><p>{bugs}</p></section>
+    </div>
+    <aside>
+      <div class="photo"><span>photo. or a sim of one.</span></div>
+      <div class="status">currently · <span>{status}</span></div>
+    </aside>
+  </article>
+</main>
+
+<style>
+  .takeover {
+    flex: 1;
+    animation: rise var(--rise) both;
+  }
+  .man {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 30px 20px 80px;
+    line-height: 1.7;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 26px;
+  }
+  .man-head {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+  .sections {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  h2 {
+    margin: 0;
+    font-size: inherit;
+    font-weight: 500;
+  }
+  section > p,
+  section > .prose {
+    margin: 0;
+    padding-left: 24px;
+  }
+  .links {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  aside {
+    width: 140px;
+  }
+  .photo {
+    width: 140px;
+    height: 170px;
+    border-radius: var(--radius);
+    background: var(--panel);
+    background-image: repeating-linear-gradient(135deg, rgb(127 127 127 / 0.06) 0 8px, transparent 8px 16px);
+    position: relative;
+  }
+  .photo span {
+    position: absolute;
+    left: 8px;
+    bottom: 6px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .status {
+    margin-top: var(--gap);
+    font-size: var(--text-2xs);
+    color: var(--muted);
+  }
+  .status span {
+    color: var(--ok);
+  }
+  @media (max-width: 520px) {
+    .man {
+      grid-template-columns: 1fr;
+    }
+    aside {
+      order: -1;
+    }
+  }
+</style>

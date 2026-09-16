@@ -1,0 +1,162 @@
+---
+// The one place with no jokes and no shell: big targets, plain words.
+// A native <dialog>, opened by the host; every item is also a plain link.
+import { CHIPS, SITE_NAME } from '../../shell/config'
+import { hrefFor } from '../../shell/router'
+---
+
+<dialog class="menu" data-menu aria-label="Site menu">
+  <nav class="panel">
+    <div class="head">
+      <button type="button" class="close" data-menu-close aria-label="Close menu">✕</button>
+      <span>{SITE_NAME}</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="grid">
+      {
+        CHIPS.map((c) => (
+          <a href={hrefFor(c.cmd)} class="big" data-cmd={c.cmd}>
+            {c.label}
+          </a>
+        ))
+      }
+    </div>
+    <button type="button" class="search" data-fill="grep ">⌕ Search everything</button>
+    <section class="visited" data-visited hidden>
+      <h2>Where you've been</h2>
+      <div class="visited-list" data-visited-list></div>
+    </section>
+    <div class="foot">
+      <div class="row">
+        <a href="/" class="dashed" data-restart>↺ Start over</a>
+        <a href={hrefFor('help')} class="dashed" data-cmd="help">Help</a>
+      </div>
+      <div class="meta">
+        <button type="button" data-theme-toggle>◐ theme</button>
+        <span>rss</span>
+      </div>
+    </div>
+  </nav>
+</dialog>
+
+<style>
+  .menu {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    max-width: none;
+    max-height: none;
+    width: 100vw;
+    height: 100dvh;
+    background: transparent;
+    color: var(--fg);
+  }
+  .menu::backdrop {
+    background: var(--scrim);
+  }
+  .panel {
+    width: min(320px, 100vw);
+    height: 100%;
+    background: var(--bar);
+    border-right: 1px solid var(--line);
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-body);
+    animation: rise var(--rise) both;
+  }
+  .head {
+    height: var(--bar-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--muted);
+    font: var(--text-xs) var(--font-mono);
+  }
+  .close {
+    min-width: var(--bar-h);
+    height: var(--bar-h);
+    margin-left: -14px;
+    font-size: 16px;
+    color: var(--fg);
+  }
+  .spacer {
+    width: 30px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap);
+    margin-top: 12px;
+  }
+  .big,
+  .search,
+  .dashed {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-size: 15px;
+    text-align: left;
+    color: var(--fg);
+    text-decoration: none;
+    transition: border-color 0.12s;
+  }
+  .big {
+    padding: 16px 12px;
+  }
+  .big:hover,
+  .search:hover,
+  .dashed:hover {
+    border-color: var(--accent);
+    color: var(--fg);
+  }
+  .search {
+    margin-top: var(--gap);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .visited h2 {
+    margin: 22px 0 4px;
+    font: var(--text-2xs) var(--font-mono);
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .visited-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .visited-list :global(a) {
+    padding: 9px 0;
+    font-size: 14px;
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .foot {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .row {
+    display: flex;
+    gap: var(--gap);
+  }
+  .dashed {
+    flex: 1;
+    border-style: dashed;
+    font-size: 14px;
+    text-align: center;
+  }
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    font: var(--text-2xs) var(--font-mono);
+    color: var(--muted);
+  }
+  .meta button {
+    color: var(--muted);
+  }
+</style>

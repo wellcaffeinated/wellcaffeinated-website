@@ -1,0 +1,101 @@
+---
+// The bar that never leaves. Its two exits (☰ and ↺) work in every mode.
+import { type Status, STATUS_LABELS } from '../../lib/status'
+import { SITE_NAME } from '../../shell/config'
+import { hrefFor } from '../../shell/router'
+
+interface Props {
+  /** The command that opened this page, shown after the site name. */
+  cmd?: string
+  /** Unpublished content says so here, so a dev-only page is never mistaken. */
+  status?: Status
+}
+
+const { cmd, status } = Astro.props
+---
+
+<header class="bar">
+  <div class="left">
+    <button type="button" class="icon" data-menu-toggle aria-label="Menu">☰</button>
+    <span class="crumb">
+      {SITE_NAME}{cmd && <span class="crumb-cmd"> · <span class="dollar">$</span> {cmd}</span>}
+    </span>
+    {status && <span class="status">{STATUS_LABELS[status]}</span>}
+  </div>
+  <nav class="right" aria-label="Shell">
+    {cmd && <a href="/" class="action strong" data-back>esc ↩</a>}
+    <a href={hrefFor('help')} class="action" data-cmd="help" data-type>help</a>
+    <a href="/" class="action" data-restart title="Start over" aria-label="Start over">↺</a>
+    <button type="button" class="action" data-theme-toggle title="Theme" aria-label="Toggle theme">◐</button>
+  </nav>
+</header>
+
+<style>
+  .status {
+    flex: none;
+    padding: 3px 8px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--ok);
+    white-space: nowrap;
+  }
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: var(--bar-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    background: var(--bar);
+    border-bottom: 1px solid var(--line);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+  .left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .icon {
+    font-size: 16px;
+    color: var(--fg);
+    min-width: var(--bar-h);
+    height: var(--bar-h);
+    margin-left: -14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .crumb {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dollar {
+    color: var(--accent);
+  }
+  .right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .action {
+    display: inline-flex;
+    align-items: center;
+    height: var(--bar-h);
+    padding: 0 10px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .action:last-child {
+    margin-right: -10px;
+  }
+  .action:hover,
+  .strong {
+    color: var(--fg);
+  }
+</style>

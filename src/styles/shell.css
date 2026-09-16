@@ -1,0 +1,267 @@
+/*
+ * The shell's log and the output descriptors drawn by src/shell/render.ts.
+ * Global (not scoped) because the renderer creates these nodes in the browser.
+ * Chrome (bars, dock, menu) is styled in its own .astro component.
+ */
+
+.log {
+  flex: 1;
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 20px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.entry {
+  animation: rise var(--rise) both;
+}
+
+.entry-cmd {
+  display: flex;
+  gap: var(--gap);
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.entry-cmd a {
+  color: var(--fg);
+  text-decoration: none;
+}
+.entry-cmd a:hover {
+  text-decoration: underline;
+}
+.prompt-user {
+  color: var(--accent);
+  white-space: nowrap;
+}
+.entry-done {
+  color: var(--ok);
+  font-size: var(--text-xs);
+}
+
+/* Anything in an output that runs a command. */
+.out-text a,
+.out-rows a,
+.out-search a {
+  text-decoration: none;
+}
+.out-text a {
+  color: var(--accent);
+  text-decoration: underline dotted;
+}
+
+/* text */
+.out-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+/* html (rendered markdown inside the log) */
+.out-html {
+  margin-top: 6px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border-radius: var(--radius);
+}
+
+/* cards */
+.out-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--gap);
+  margin-top: var(--gap);
+}
+.card {
+  --card-bg: var(--panel);
+  --card-ink: var(--fg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 96px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  color: var(--card-ink);
+  text-decoration: none;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(127 127 127 / 0.06) 0 6px,
+    transparent 6px 12px
+  );
+  transition: border-color 0.12s;
+}
+.card[style] {
+  background-image: none;
+}
+.card:hover {
+  border-color: var(--accent);
+  color: var(--card-ink);
+}
+.card-meta {
+  font-size: var(--text-2xs);
+  opacity: 0.75;
+}
+.card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  font-size: var(--text-sm);
+}
+.card-title > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.card-badge {
+  font-size: 10px;
+  color: var(--ok);
+  white-space: nowrap;
+}
+
+/* rows */
+.out-rows {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 2px 14px;
+  margin-top: 6px;
+  font-size: var(--text-sm);
+}
+.row-k {
+  color: var(--muted);
+  min-width: 2.5em;
+}
+.row-title {
+  color: var(--fg);
+  min-height: 28px;
+}
+a.row-title:hover {
+  text-decoration: underline;
+}
+.row-meta {
+  color: var(--muted);
+  font-size: var(--text-2xs);
+  text-align: right;
+  white-space: nowrap;
+  align-self: center;
+}
+
+/* help */
+.out-help {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 16px;
+  margin-top: 6px;
+  font-size: var(--text-sm);
+}
+.out-help button {
+  text-align: left;
+  min-height: 28px;
+}
+.help-desc,
+.help-more,
+.help-footer {
+  color: var(--muted);
+  align-self: center;
+}
+.help-footer {
+  font-style: italic;
+}
+
+/* error */
+.out-error {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.error-message {
+  color: var(--warn);
+}
+.error-hint {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.suggestion {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--fg);
+  text-decoration: none;
+  max-width: 100%;
+}
+.suggestion[data-primary] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* search */
+.out-search {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: var(--text-sm);
+}
+.hit-head {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.hit-title {
+  color: var(--fg);
+}
+.hit-title:hover {
+  text-decoration: underline;
+}
+.hit-meta,
+.search-summary {
+  color: var(--muted);
+  font-size: var(--text-2xs);
+}
+.hit-excerpt {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  padding-left: 14px;
+}
+.hit-excerpt mark {
+  background: none;
+  color: var(--warn);
+}
+
+/* A shared look for the small pill buttons in bars and the dock. */
+.pill {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--gap);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  text-decoration: none;
+  background: none;
+  transition:
+    color 0.12s,
+    border-color 0.12s;
+}
+.pill:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+.pill[data-strong] {
+  color: var(--fg);
+}
