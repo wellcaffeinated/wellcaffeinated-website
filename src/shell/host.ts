@@ -83,11 +83,11 @@ function promptElements(
   return { form, input, hint, completions }
 }
 
-function scrollToBottom() {
+function scrollToBottom(behavior: ScrollBehavior = 'smooth') {
   requestAnimationFrame(() =>
     window.scrollTo({
       top: document.documentElement.scrollHeight,
-      behavior: 'smooth',
+      behavior,
     }),
   )
 }
@@ -338,6 +338,11 @@ async function main() {
     entries = session.entries.map(settleOpened)
     lastId = Math.max(0, ...entries.map((entry) => entry.id))
     redraw()
+    // Returning here (esc, a content page's exit) is a fresh navigation,
+    // not browser back, so the page has no scroll position of its own to
+    // restore. The natural return point is the bottom, where the restored
+    // history is longest.
+    scrollToBottom('instant')
   } else {
     // Keep the server-rendered boot + hello as-is; just adopt them as entries.
     entries = bootEntries()
